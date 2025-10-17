@@ -61,7 +61,7 @@ bot_1 = 2
 tournamentId = "mock_tournament_2"
 id = "tourn_game_2_0"
 player = 7
-bot_1 = 2
+" anon0" = 2
 
 [[games]]
 tournamentId = "mock_tournament_2"
