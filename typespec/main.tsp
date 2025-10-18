@@ -108,7 +108,7 @@ interface Friends {
   @doc("Sends or accepts a friend request")
   @useAuth(BearerAuth)
   @route("add/{username}")
-  @post
+  @put
   add(@path username: Username): void | NotFoundResponse | UnauthorizedResponse;
 
   @doc("Deletes a friend or rejects a friend request")
@@ -251,7 +251,7 @@ interface Games {
     | UnauthorizedResponse;
 
   @route("/invite")
-  @post
+  @put
   inviteUser(@query username: Username):
     | void
     | MatchmakeError
@@ -263,7 +263,7 @@ interface Games {
   leaveRoom(): void | MatchmakeError | UnauthorizedResponse;
 
   @route("/ready")
-  @post
+  @put
   ready(@query unready?: boolean): void | MatchmakeError | UnauthorizedResponse;
 
   @route("/reconnect")
