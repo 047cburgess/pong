@@ -6,16 +6,6 @@ using Http;
 namespace FtTranscendence;
 
 @error
-model NotFound {
-  @statusCode statusCode: 404;
-}
-
-@error
-model NotAuthorized {
-  @statusCode statusCode: 401;
-}
-
-@error
 model Error {
   code: int32;
 }
@@ -33,13 +23,13 @@ alias Username = User.username;
 interface Me {
   @route("/me")
   @useAuth(BearerAuth)
-  get(): User | NotAuthorized;
+  get(): User | UnauthorizedResponse;
 }
 
 @tag("Users")
 @route("/users")
 interface Users {
-  user(@path username: Username): User | NotFound;
+  user(@path username: Username): User | NotFoundResponse;
 }
 
 @tag("Friends")
@@ -59,7 +49,7 @@ interface Friends {
     @maxValue(100)
     @query
     per_page: uint32 = 20,
-  ): User[] | NotFound;
+  ): User[] | NotFoundResponse;
 
   @doc("Lists incoming friend requests for the current user")
   @useAuth(BearerAuth)
@@ -74,19 +64,21 @@ interface Friends {
     @maxValue(100)
     @query
     per_page: uint32 = 20,
-  ): User[] | NotAuthorized;
+  ): User[] | UnauthorizedResponse;
 
   @doc("Sends or accepts a friend request")
   @useAuth(BearerAuth)
   @route("add/{username}")
   @post
-  add(@path username: Username): void | NotFound | NotAuthorized;
+  add(@path username: Username): void | NotFoundResponse | UnauthorizedResponse;
 
   @doc("Deletes a friend or rejects a friend request")
   @useAuth(BearerAuth)
   @route("delete/{username}")
   @delete
-  delete(@path username: Username): void | NotFound | NotAuthorized;
+  delete(
+    @path username: Username,
+  ): void | NotFoundResponse | UnauthorizedResponse;
 }
 
 model Game {
@@ -118,9 +110,9 @@ interface GameHistory {
     @maxValue(25)
     @query
     per_page: uint32 = 15,
-  ): Game[] | NotFound;
+  ): Game[] | NotFoundResponse;
 
-  @get game(@path id: Game.id): Game | NotFound;
+  @get game(@path id: Game.id): Game | NotFoundResponse;
 }
 
 model Tournament {
@@ -147,13 +139,46 @@ interface TournamentHistory {
     @maxValue(25)
     @query
     per_page: uint32 = 15,
-  ): Tournament[] | NotFound;
+  ): Tournament[] | NotFoundResponse;
 
-  @get tournament(@path id: Tournament.id): Tournament | NotFound;
+  @get tournament(@path id: Tournament.id): Tournament | NotFoundResponse;
 }
 
 model GameRoom {
   id: string;
+}
+
+model GameParams {
+  @minValue(2)
+  @maxValue(4)
+  nPlayers?: uint32 = 2;
+
+  @minValue(16)
+  @maxValue(160)
+  ballSpeed?: uint32 = 130;
+
+  @minValue(4000)
+  @maxValue(60000)
+  paddleSize?: uint32 = 17000;
+
+  @minValue(40)
+  @maxValue(500)
+  paddleSpeed?: uint32 = 320;
+
+  @minValue(0)
+  @maxValue(64)
+  paddleInertia?: float = 16;
+
+  @minValue(-5)
+  @maxValue(5)
+  paddleFriction?: float = 1.4;
+
+  @minValue(15000)
+  @maxValue(180000)
+  timeLimitMs?: uint32 = 120000;
+
+  startingHealth?: uint32;
+  pointsTarget?: uint32;
 }
 
 @error
@@ -167,32 +192,36 @@ model MatchmakeError {
 @useAuth(BearerAuth)
 interface Games {
   @route("/matchmake")
-  matchmake(): void | MatchmakeError | NotAuthorized;
+  matchmake(): void | MatchmakeError | UnauthorizedResponse;
 
   @route("/custom-game")
-  customGame(): GameRoom | MatchmakeError | NotAuthorized;
+  @post
+  customGame(@body gameParams?: GameParams):
+    | GameRoom
+    | MatchmakeError
+    | UnauthorizedResponse
+    | BadRequestResponse;
 
   @route("/join")
   joinRoom(@path id: GameRoom.id):
     | void
-    | NotFound
     | MatchmakeError
-    | NotAuthorized;
+    | NotFoundResponse
+    | UnauthorizedResponse;
 
   @route("/invite")
   inviteUser(@query username: Username):
     | void
-    | NotFound
     | MatchmakeError
-    | NotAuthorized;
+    | NotFoundResponse
+    | UnauthorizedResponse;
 
   @route("/leave")
-  leaveRoom(): void | MatchmakeError | NotAuthorized;
+  leaveRoom(): void | MatchmakeError | UnauthorizedResponse;
 
   @route("/ready")
-  ready(@query unready?: boolean): void | MatchmakeError | NotAuthorized;
+  ready(@query unready?: boolean): void | MatchmakeError | UnauthorizedResponse;
 
   @route("/reconnect")
-  reconnect(): GameRoom | MatchmakeError | NotAuthorized;
+  reconnect(): GameRoom | MatchmakeError | UnauthorizedResponse;
 }
-
