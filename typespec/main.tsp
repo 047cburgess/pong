@@ -32,6 +32,7 @@ alias Username = User.username;
 
 interface Me {
   @route("/me")
+  @useAuth(BearerAuth)
   get(): User | NotAuthorized;
 }
 
