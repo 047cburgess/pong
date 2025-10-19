@@ -1,6 +1,7 @@
 export abstract class AElement {
   id?: string;
   classes: string[] = [];
+  onclick?: (this: GlobalEventHandlers, e: PointerEvent) => any;
 
   abstract render(): string;
 
@@ -14,7 +15,14 @@ export abstract class AElement {
     return this;
   }
 
-  genTags(): string {
+  withOnclick(
+    onclick: (this: GlobalEventHandlers, e: PointerEvent) => any
+  ): AElement {
+    this.onclick = onclick;
+    return this;
+  }
+
+  protected genTags(): string {
     let res = "";
     if (this.id) {
       res += `id="${this.id}" `;
@@ -30,6 +38,22 @@ export abstract class AElement {
       return document.getElementById(this.id);
     }
     return null;
+  }
+
+  redraw(): void {
+    const self = this.byId();
+    if (!self) {
+      return;
+    }
+    self.outerHTML = this.render();
+  }
+
+  bindEvents(): void {
+    const self = this.byId();
+    if (!self || !this.onclick) {
+      return;
+    }
+    self.onclick = this.onclick;
   }
 }
 
@@ -48,6 +72,21 @@ export class Div extends AElement {
     }
     res += "</div>";
     return res;
+  }
+
+  bindEvents(): void {
+    super.bindEvents();
+    for (const e of this.contents) {
+      e.bindEvents();
+    }
+  }
+
+  redrawInner(): void {
+    const self = this.byId();
+    if (!self) {
+      return;
+    }
+    self.innerHTML = this.contents.map(e => e.render()).join("");
   }
 }
 
@@ -121,5 +160,19 @@ export class Inline extends AElement {
 
   render(): string {
     return this.value;
+  }
+};
+
+export class Image extends AElement {
+  src: string;
+
+  constructor(src: string) {
+    super();
+
+    this.src = src;
+  }
+
+  render(): string {
+    return `<img src="${this.src}" ${this.genTags()}/>`;
   }
 };

@@ -9,13 +9,38 @@ export abstract class Page {
 
   abstract content(): AElement[];
   bindEvents(): void { }
+  transitionIn(): null | void { return null; }
+  transitionAway(): number | void { }
 }
+
+const AUTO_ANIM_PRE = [
+  "transition",
+  "ease-in-out",
+  "duration-300",
+  "opacity-100",
+];
+const AUTO_ANIM = [
+  "transition",
+  "ease-in-out",
+  "duration-300",
+  "opacity-0",
+];
+
+export class NavError extends Error {
+  error: number | string;
+
+  constructor(error: number | string) {
+    super();
+    this.error = error;
+  }
+};
 
 export default class Router {
   private routes: { [key: string]: new (r: Router) => Page } = {};
-  private errors: (new (r: Router) => Page)[] = [];
+  private errors: { [key: string | number]: new (r: Router) => Page } = {};
   private rootElement: HTMLElement;
 
+  private navPending?: NodeJS.Timeout;
   private currentPath?: string;
   private currentPage?: Page;
 
@@ -31,11 +56,18 @@ export default class Router {
     this.routes[path] = pageCtor;
   }
 
-  addError(err: number, pageCtor: new (r: Router) => Page): void {
+  addError(err: number | string, pageCtor: new (r: Router) => Page): void {
     this.errors[err] = pageCtor;
   }
 
+  navError(err: string | number): void {
+
+  }
+
   navigate(path: string, pushState: boolean = true): void {
+    if (this.navPending) {
+      return;
+    }
     const cleanPath = path.startsWith("/") ? path.slice(1) : path;
     if (this.currentPath === cleanPath) {
       return;
@@ -46,20 +78,58 @@ export default class Router {
       history.pushState({}, "", `/${cleanPath}`);
     }
 
-    if (page) {
-      this.currentPage = new page(this);
-    } else {
-      if (this.errors[404]) {
-        this.currentPage = new this.errors[404](this);
+    let delay = 0;
+    if (this.currentPage) {
+      delay = this.currentPage.transitionAway() ?? 0;
+    }
+    if (this.currentPage && delay === 0) {
+      requestAnimationFrame(() => {
+        this.rootElement.classList.add(...AUTO_ANIM_PRE);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          this.rootElement.classList.remove(...AUTO_ANIM_PRE);
+          this.rootElement.classList.add(...AUTO_ANIM);
+        }));
+      });
+      delay = 333;
+    }
+
+    this.navPending = setTimeout(() => {
+      if (page) {
+        try {
+          this.currentPage = new page(this);
+        } catch (e) {
+          if (e instanceof NavError) {
+            this.navError(e.error);
+            return;
+          }
+          throw e;
+        }
+      } else if (this.errors[404]) {
+        this.navError(404);
+        return;
       } else {
         this.currentPage = {
           router: this,
           content: () => { return []; },
           bindEvents: () => { },
+          transitionIn: () => { return null; },
+          transitionAway: () => { },
         };
       }
-    }
-    this.redraw();
+      delete this.navPending;
+      this.rootElement.classList.remove(...AUTO_ANIM, ...AUTO_ANIM_PRE);
+      this.redraw();
+      if (this.currentPage?.transitionIn() === null) {
+        requestAnimationFrame(() => {
+          this.rootElement.classList.add(...AUTO_ANIM);
+          requestAnimationFrame(() => {
+            this.rootElement.classList.remove(...AUTO_ANIM);
+            this.rootElement.classList.add(...AUTO_ANIM_PRE);
+          });
+        });
+      }
+      this.currentPage?.bindEvents();
+    }, delay);
   }
 
   redraw(): void {
@@ -67,7 +137,6 @@ export default class Router {
     if (this.currentPage) {
       this.rootElement.innerHTML
         = this.currentPage.content().map((e) => e.render()).join(" ");
-      this.currentPage.bindEvents();
     }
   }
 }

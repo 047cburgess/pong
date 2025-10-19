@@ -1,4 +1,6 @@
-import Router, { Page } from "../Router";
+import { API } from "../Api";
+import { APP } from "../App";
+import Router, { NavError, Page } from "../Router";
 import { AElement, Div, Inline, Paragraph } from "./elements/Elements";
 
 type GameData = {
@@ -10,10 +12,13 @@ type GameData = {
 };
 
 type UserInfo = {
-  avatar: string,
+  avatar?: string,
   username: string,
   isOnline: boolean,
 };
+
+const TILE_ANIM_KEY1 = ["opacity-0"];
+const TILE_ANIM_KEY2 = ["opacity-100"];
 
 const TILE_STYLES: string
   = "outline-0 rounded-xl outline-neutral-700 p-4";
@@ -65,33 +70,6 @@ class GameCardBase extends Div {
   }
 }
 
-// class GameCardSmall extends GameCardBase {
-//   constructor(data: GameData | undefined) {
-//     super(data);
-// 
-//     let content: AElement[];
-//     if (!this.data) {
-//       content = [
-//         new Paragraph("No match data")
-//           .class("text-s self-center ml-2"),
-//       ];
-//     } else {
-//       content = [
-//         new Paragraph(this.data.date.toLocaleDateString())
-//           .class("text-xs self-center ml-2 w-18"),
-//         new Paragraph(cardTextFromResult(this.data.result))
-//           .class("self-center font-bold"),
-//         new Paragraph(this.data.scores.join(" – "))
-//           .class("self-center font-bold ml-auto mr-4"),
-//       ];
-//     }
-//     this.contents = [
-//       new Paragraph("•").class("ml-4 self-center"),
-//       ...content,
-//     ];
-//   }
-// }
-
 class GameCardLarge extends GameCardBase {
   constructor(data: GameData | undefined) {
     super(data);
@@ -107,11 +85,11 @@ class GameCardLarge extends GameCardBase {
     this.contents = [
       new Div([
         new Paragraph(this.data.date.toLocaleString())
-          .class("font-bold text-xs w-37"),
+          .class("font-bold text-xs pr-2"),
         new Paragraph(cardTextFromResult(this.data.result))
           .class("font-bold text-xl"),
-      ]).class("m-2 ml-4 self-center grow-1"),
-      this.scoreDiv().class("grow-10"),
+      ]).class("m-2 ml-4 self-center w-40"),
+      this.scoreDiv().class("grow"),
     ];
   }
 
@@ -125,14 +103,14 @@ class GameCardLarge extends GameCardBase {
         new Div([
           new Paragraph(`${this.data.scores[i]}`),
           new Paragraph(`${this.data.players[i]}`),
-        ]).class("flex flex-row justify-between")
+        ]).class("flex flex-row justify-between gap-2")
       );
     }
     return new Div([
       new Div([
         new Paragraph(this.data.players[0]),
         new Paragraph(`${this.data.scores[0]}`),
-      ]).class("flex flex-row self-center justify-between grow ml-4"),
+      ]).class("flex flex-row self-center justify-between grow ml-4 gap-2"),
       new Paragraph(" – ").class("self-center m-3"),
       new Div(rows).class("self-center grow"),
     ]).class("font-bold flex flex-row ml-2 mr-4 grow justify-between") as Div;
@@ -140,69 +118,11 @@ class GameCardLarge extends GameCardBase {
 }
 
 export default class DashboardPage extends Page {
-  lastGames: GameData[] = [
-    {
-      date: new Date(),
-      result: "W",
-      players: ["You", "Bot1", "Bot2", "Bot3"],
-      scores: [7, 0, 4, 2],
-      id: "game0",
-    },
-    {
-      date: new Date(),
-      result: "W",
-      players: ["You", "Bot", "Gamer"],
-      scores: [7, 3, 1],
-      id: "game1",
-    },
-    {
-      date: new Date(),
-      result: "L",
-      players: ["You", "Bot1"],
-      scores: [3, 7],
-      id: "game2",
-    },
-    {
-      date: new Date(),
-      result: "D",
-      players: ["You", "Bot1", "Bot2", "Bot3"],
-      scores: [4, 0, 4, 2],
-      id: "game3",
-    },
-    {
-      date: new Date(),
-      result: "L",
-      players: ["You", "Bot1"],
-      scores: [3, 7],
-      id: "game2",
-    },
-    {
-      date: new Date(),
-      result: "L",
-      players: ["You", "Bot1"],
-      scores: [3, 7],
-      id: "game2",
-    },
-    {
-      date: new Date(),
-      result: "L",
-      players: ["You", "Bot1"],
-      scores: [3, 7],
-      id: "game2",
-    },
-  ];
+  lastGames: GameData[] = [];
 
-  gameStats = {
-    wins: 1234,
-    draws: 32,
-    losses: 128,
-  };
+  gameStats = { wins: 0, draws: 0, losses: 0 };
 
-  friends: UserInfo[] = [
-    { avatar: "", username: "Bot1", isOnline: false },
-    { avatar: "", username: "Bot2", isOnline: true },
-    { avatar: "", username: "Bot3", isOnline: false },
-  ];
+  friends: UserInfo[] = [];
   friendCards?: AElement[];
 
   historyTitle?: Paragraph;
@@ -211,11 +131,152 @@ export default class DashboardPage extends Page {
   friendsTitle?: AElement;
 
   // TODO(Vaiva): user info schema
-  username: string = "Vaiva";
+  username: string;
+  userInfo?: UserInfo & { nFriends: number };
+
+  tiles?: AElement[];
 
   constructor(router: Router) {
     super(router);
-    // TODO(Vaiva): fetch game data
+
+    let username = new URLSearchParams(location.search).get("user");
+    if (!username) {
+      username = APP.userInfo?.username ?? null;
+    }
+    if (!username) {
+      throw new NavError(403);
+    }
+
+    this.username = username;
+
+    API.fetch(`/users?user=${this.username}`).then(async (r) => {
+      if (r.status !== 200) {
+        this.router.navError(r.status);
+        return;
+      }
+      await new Promise(r => setTimeout(r, 734));
+      this.userInfo = {
+        username: this.username,
+        isOnline: true,
+        nFriends: 31,
+      }; // await r.json();
+      (this.userInfoTile() as Div).redrawInner();
+      (this.friendsTile() as Div).redrawInner();
+    }).catch(_ => { });
+
+    API.fetch(`/friends?user=${this.username}`).then(async (r) => {
+      if (r.status !== 200) {
+        this.router.navError(r.status);
+        return;
+      }
+      await new Promise(r => setTimeout(r, 1654));
+      this.friends = [
+        {
+          username: "Bot1",
+          isOnline: false,
+        },
+        {
+          username: "Bot2",
+          isOnline: true,
+        },
+        {
+          username: "Bot3",
+          isOnline: false,
+        },
+        {
+          username: "Bot4",
+          isOnline: true,
+        },
+        {
+          username: "Bot5",
+          isOnline: true,
+        },
+        {
+          username: "Bot6",
+          isOnline: false,
+        },
+        {
+          username: "Bot7",
+          isOnline: false,
+        },
+      ];
+      const tile = this.friendsTile() as Div;
+      tile.redrawInner();
+      tile.bindEvents();
+    }).catch(_ => { });
+
+    API.fetch(`/games?user=${this.username}`).then(async (r) => {
+      if (r.status !== 200) {
+        this.router.navError(r.status);
+        return;
+      }
+      await new Promise(r => setTimeout(r, 1421));
+      this.lastGames = [
+        {
+          date: new Date(),
+          result: "W",
+          players: [this.username, "Bot1"],
+          scores: [7, 2],
+          id: "mock_game_1",
+        },
+        {
+          date: new Date(),
+          result: "L",
+          players: [this.username, "Bot1", "Bot2"],
+          scores: [2, 5, 3],
+          id: "mock_game_2",
+        },
+        {
+          date: new Date(),
+          result: "D",
+          players: [this.username, "Bot1", "Bot2", "VeryLongUsername"],
+          scores: [5, 4, 3, 5],
+          id: "mock_game_3",
+        },
+        {
+          date: new Date(),
+          result: "W",
+          players: [this.username, "Bot1", "Bot2", "Bot3"],
+          scores: [7, 4, 3, 5],
+          id: "mock_game_4",
+        },
+        {
+          date: new Date(),
+          result: "W",
+          players: [this.username, "Bot1"],
+          scores: [5, 4],
+          id: "mock_game_5",
+        },
+        {
+          date: new Date(),
+          result: "W",
+          players: [this.username, "Bot1"],
+          scores: [5, 1],
+          id: "mock_game_6",
+        },
+      ];
+      // await r.json();
+      const tile = this.matchHistoryTile() as Div;
+      tile.redrawInner();
+      tile.bindEvents();
+    }).catch(_ => { });
+
+    API.fetch(`/stats?user=${this.username}`).then(async (r) => {
+      if (r.status !== 200) {
+        this.router.navError(r.status);
+        return;
+      }
+      await new Promise(r => setTimeout(r, 532));
+      this.gameStats = {
+        wins: 4,
+        draws: 1,
+        losses: 2,
+      };
+      // await r.json(); // TODO(Vaiva): wrong schema
+      (this.userInfoTile() as Div).redrawInner();
+      (this.matchHistoryTile() as Div).redrawInner();
+    }).catch(_ => { });
+
     this.seeAll = new GameCardBase(undefined)
       .class("justify-center hover:bg-zinc-600/50 h-10")
       .withId("see-all-btn");
@@ -224,15 +285,28 @@ export default class DashboardPage extends Page {
   }
 
   content(): AElement[] {
+    const sideLeft = [
+      this.userInfoTile().class(TILE_STYLES),
+      this.friendsTile().class(TILE_STYLES),
+    ];
+    const sideRight = [
+      this.matchHistoryTile().class(TILE_STYLES),
+    ];
+
+    delete this.tiles;
+    this.tiles = sideLeft.concat(sideRight);
+
+    for (let i = 0; i < this.tiles.length; i++) {
+      if (!this.tiles[i].id) {
+        this.tiles[i].id = `tile-anim-${i}`;
+      }
+    }
+
     return [new Div([
-      new Div([
-        this.userInfoTile().class(TILE_STYLES),
-        this.aboutTile().class(TILE_STYLES),
-        this.friendsTile().class(TILE_STYLES),
-      ]).class("flex flex-col grow lg:max-w-100 gap-2 md:gap-4"),
-      new Div([
-        this.matchHistoryTile().class(TILE_STYLES),
-      ]).class("col-span-2 flex flex-col grow lg:max-w-200 gap-2 md:gap-4"),
+      new Div(sideLeft)
+        .class("flex flex-col grow lg:max-w-100 gap-2 md:gap-4"),
+      new Div(sideRight)
+        .class("col-span-2 flex flex-col grow lg:max-w-200 gap-2 md:gap-4"),
     ]).class("gap-2 flex flex-col p-12 min-w-120 max-w-300")
       .class("md:grid md:grid-cols-3 ml-auto mr-auto md:gap-4"),
     ];
@@ -279,17 +353,9 @@ export default class DashboardPage extends Page {
       new Paragraph("Rank:"),
       new Paragraph("Player").class("text-right font-bold self-end"),
       // new Div(),
-    ]).class("grid grid-cols-2");
-  }
-
-  aboutTile(): AElement {
-    return new Div([
-      new Paragraph("About me").class("font-bold text-xl mb-4"),
-      // new Paragraph("Empty").class(MUTED_TEXT),
-      new Paragraph("Learn about the history, usage and variations of Lorem Ipsum"
-        + ", the industry's standard dummy text for over 2000 years. Generate your "
-        + "own Lorem Ipsum with a dictionary of over 200 Latin words and a random sentence structure."),
-    ]).class("flex flex-col");
+    ])
+      .class("grid grid-cols-2")
+      .withId("tile-user-info");
   }
 
   friendsTile(): AElement {
@@ -305,7 +371,8 @@ export default class DashboardPage extends Page {
         elems[1].class("bg-neutral-400");
       }
       const res = new Div(elems)
-        .class("flex flex-row gap-4 hover:bg-zinc-800 rounded-xl").withId(`friend-${index}`);
+        .class("transition duration-150 ease-in-out flex flex-row gap-4 hover:bg-zinc-800 rounded-xl")
+        .withId(`friend-${index}`);
       (res as any).username = info.username;
       return res;
     };
@@ -319,14 +386,15 @@ export default class DashboardPage extends Page {
       flist = [new Paragraph("No frens found :(").class(MUTED_TEXT)];
     }
 
-    this.friendsTitle = new Div([new Paragraph("Friends →"), new Paragraph("132")])
+    this.friendsTitle = new Div([new Paragraph("Friends →"), new Paragraph(`${this.userInfo?.nFriends ?? "..."}`)])
       .class("flex justify-between font-bold text-xl mb-2")
       .withId("friends-list-title");
 
     return new Div([
       this.friendsTitle,
       ...flist,
-    ]).class("flex flex-col gap-2 select-none");
+    ]).class("flex flex-col gap-2 select-none")
+      .withId("tile-friends");
   }
 
   matchHistoryTile(): AElement {
@@ -335,11 +403,13 @@ export default class DashboardPage extends Page {
     this.cards = [bigCard];
     for (let i = 1; i < Math.min(5, this.lastGames.length); i++) {
       const c = new GameCardLarge(this.lastGames[i]);
-      c.class("h-30").withId(`card-${i}`);
+      c.class("h-30").withId(`card-${i}`)
+        .withOnclick(() => this.router.navigate(`/game?id=${this.lastGames[i].id}`));
       this.cards.push(c);
     }
     this.historyTitle = new Paragraph("Match history&nbsp;→")
       .class("select-none")
+      .withOnclick(() => this.router.navigate("/game-history"))
       .withId("match-history") as Paragraph;
     return new Div([
       new Div([
@@ -352,7 +422,8 @@ export default class DashboardPage extends Page {
       ]).class("flex flex-row gap-4 justify-between font-bold text-xl mb-2"),
       ...this.cards,
       this.seeAll
-    ]).class("flex flex-col gap-2 md:gap-4");
+    ]).class("flex flex-col gap-2 md:gap-4")
+      .withId("tile-match-history");
   }
 
   bindEvents() {
@@ -378,5 +449,26 @@ export default class DashboardPage extends Page {
         this.router.navigate(`dashboard?user=${(c as any).username}`);
       });
     });
+  }
+
+  transitionIn(): null | void {
+    ["delay-25", "delay-50", "delay-75",
+      "delay-100", "delay-200", "delay-300",
+      "delay-125", "delay-225", "delay-325",
+      "delay-150", "delay-250", "delay-350",
+      "delay-175", "delay-275", "delay-375",];
+
+    this.tiles?.forEach((t, i) => t.byId()?.classList.add(
+      "transition", "ease-in-out", "duration-900",
+      `delay-${i * 50 + 25}`,
+      ...TILE_ANIM_KEY1
+    ));
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      this.tiles?.forEach((t) => {
+        t.byId()?.classList.remove(...TILE_ANIM_KEY1);
+        t.byId()?.classList.add(...TILE_ANIM_KEY2);
+      });
+    }));
   }
 };
