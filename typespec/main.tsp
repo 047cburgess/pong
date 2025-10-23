@@ -25,6 +25,7 @@ model GameResult {
 }
 
 alias TournamentId = string;
+alias GameMode = "classic" | "tournament";
 
 model TournamentResult {
   @key id: TournamentId;
