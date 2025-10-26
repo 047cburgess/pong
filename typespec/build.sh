@@ -3,7 +3,7 @@
 set -eu
 
 rm -rf tsp-output
-tsp compile .
+npx tsp compile .
 
 mkdir -p tsp-output/typescript
 
