@@ -5,6 +5,8 @@
 tsp-output/
 dist/
 
+schema/
+
 # Dependency directories
 node_modules/
 

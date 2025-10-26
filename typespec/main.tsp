@@ -6,27 +6,40 @@ using Http;
 @service(#{ title: "FtTranscendence" })
 namespace FtTranscendence;
 
-model Game {
+model GameResult {
   @key id: string;
+  @minItems(2)
+  @maxItems(4)
   players: {
     id: User.Id | string;
     score: int32;
   }[];
 
   @doc("Username of the winner or `undefined` if draw")
-  winner?: Username;
+  winnerId?: User.Id | string;
+
+  tournamentId?: TournamentId;
 
   date: utcDateTime;
   duration: duration;
 }
 
-model Tournament {
-  @key id: string;
-  createdAt: utcDateTime;
+alias TournamentId = string;
+alias GameMode = "classic" | "tournament";
+
+model TournamentResult {
+  @key id: TournamentId;
+  date: utcDateTime;
+
+  @minItems(4)
+  @maxItems(4)
+  participants: {
+	id: User.Id | string;
+	}[];
   games: {
-    semifinal1: Game;
-    semifinal2: Game;
-    final: Game;
+    semifinal1: GameResult;
+    semifinal2: GameResult;
+    final: GameResult;
   };
 }
 
@@ -36,14 +49,18 @@ model GameStats {
     draws: uint32;
     losses: uint32;
   };
+  @maxItems(7)
   daily: {
     wins: uint32;
     draws: uint32;
     losses: uint32;
     day: plainDate;
   }[];
-  recentMatches: Game[];
-  recentTournaments: Tournament[];
+
+  @maxItems(5)
+  recentMatches: GameResult[];
+  @maxItems(5)
+  recentTournaments: TournamentResult[];
 }
 
 @route("/users")
@@ -89,7 +106,7 @@ interface Users {
     @maxValue(100)
     @query
     per_page: uint32 = 25,
-  ): Game[] | NotModifiedResponse | NotFoundResponse | UnauthorizedResponse;
+  ): GameResult[] | NotModifiedResponse | NotFoundResponse | UnauthorizedResponse;
 
   @tag("Game Stats")
   @route("{username}/tournaments")
@@ -106,7 +123,7 @@ interface Users {
     @query
     per_page: uint32 = 20,
   ):
-    | Tournament[]
+    | TournamentResult[]
     | NotModifiedResponse
     | NotFoundResponse
     | UnauthorizedResponse;
@@ -272,12 +289,12 @@ namespace User {
   @tag("Game Stats")
   @useAuth(BearerAuth)
   interface History {
-    @doc("Game stats for the current user")
+    @doc("Get Game stats for the current user")
     @route("stats")
     @get
     stats(): GameStats | NotModifiedResponse | UnauthorizedResponse;
 
-    @doc("Match history for the current user")
+    @doc("Get Match history for the current user")
     @route("games")
     @get
     games(
@@ -289,9 +306,9 @@ namespace User {
       @maxValue(100)
       @query
       per_page: uint32 = 25,
-    ): Game[] | NotModifiedResponse | UnauthorizedResponse;
+    ): GameResult[] | NotModifiedResponse | UnauthorizedResponse;
 
-    @doc("Tournament history for the current user")
+    @doc("Get Tournament history for the current user")
     @route("tournaments")
     @get
     tournaments(
@@ -303,90 +320,145 @@ namespace User {
       @maxValue(100)
       @query
       per_page: uint32 = 25,
-    ): Tournament[] | NotModifiedResponse | UnauthorizedResponse;
+    ): TournamentResult[] | NotModifiedResponse | UnauthorizedResponse;
+
+    @doc("Submit local game result from front end")
+    @route("games/local")
+    @post
+    submitGame(
+    @body body: LocalGameSubmission;
+    ): void | BadRequestResponse | UnauthorizedResponse;
+
+    @doc("Submit local tournament result from front end")
+    @route("tournaments/local")
+    @post
+    submitTournament(
+    @body body: LocalTournamentSubmission;
+    ): void | BadRequestResponse | UnauthorizedResponse;
   }
 }
 
 /**
- * `QueueKey` is returned by all the endpoints that are opening game websocket connection.
+ * `GameKey` is returned by all the endpoints that are opening game websocket connection.
  * Since the websocket endpoint cannot have body,
- * `QueueKey` will be the first message send via the newly established websocket"
+ * `GameKey` will be the first message send via the newly established websocket"
  */
-model QueueKey {
+model GameKey {
   key: string;
-  roomId: string;
+  gameId: string;
   expires: utcDateTime;
 }
 
-alias GameWebsocket = Streams.Stream<{
-  id?: string;
-  type?: string;
-  data?: unknown;
-}>;
-
-alias GameRoomConnection = QueueKey & GameWebsocket;
-
-@doc("Endpoints for creating/joining games. See `QueueKey` for more details")
+@doc("Endpoints for creating/joining games. See `GameKey` for more details")
 @tag("Games")
 @route("/games")
 @useAuth(BearerAuth)
-interface Play {
+interface Games {
   @route("queue")
   @post
-  queue(): GameRoomConnection | UnauthorizedResponse;
-
+  queue(): GameKey | UnauthorizedResponse;
+  @doc("Online custom game request going to MM service. Body contains players that matchmaking service will invite via SSE.")
   @route("create")
   @post
   create(
     @body body: {
       @minValue(2)
       @maxValue(4)
+      @doc("Capacity of the game. Host can invite as many as they like but starts when full.")
       numberOfPlayers: uint32;
-
-      playerAliases?: string[];
-      invitedPlayerIds?: User.Id[];
+      invitedPlayerIds: User.Id[];
     },
-  ): GameRoomConnection | BadRequestResponse | UnauthorizedResponse;
+  ): GameKey | BadRequestResponse | UnauthorizedResponse;
 
-  @route("create-tournament")
+/* Leaving the accept / decline for game invites as will be helpful for token management in the back end as tokens are limited to number of players. we should set up a webhook to matchmaking knows which players have successfully connected and waiting in the game lobby. */
+  @doc("Accept game invitation and receive token for WebSocket connection to game server.")
+  @route("{gameId}/join")
+  @post
+  join(
+  @path gameId: string,
+  ): GameKey | ConflictResponse | NotFoundResponse | UnauthorizedResponse;
+
+  @doc("Decline game invitation.")
+  @route("{gameId}/decline")
+  @delete
+  decline(
+  @path gameId: string,
+  ): void | NotFoundResponse | UnauthorizedResponse;
+}
+
+model TournamentKey {
+	key: string;
+	tournamentId: string;
+	expires: utcDateTime;
+}
+
+model LocalGameSubmission {
+	@minItems(2)
+	@maxItems(4)
+	players: {
+		id: User.Id | string;
+		score: uint32;
+	}[];
+	winnerId?: User.Id | string;
+	duration: duration;
+}
+
+model LocalTournamentSubmission {
+	@minItems(4)
+	@maxItems(4)
+	participants: {
+		id: User.Id | string;
+	}[];
+	games: {
+		semifinal1: LocalGameSubmission;
+		semifinal2: LocalGameSubmission;
+		final: LocalGameSubmission;
+	};
+}
+
+@doc("Endpoint for online tournaments with registered users.")
+@tag("Tournaments")
+@route("/tournaments")
+@useAuth(BearerAuth)
+interface Tournaments {
+  @doc("Create a new online tournament and invite players to register.")
+  @route("create")
   @post
   createTournament(
     @body body: {
-      playerAliases?: string[];
-      invitedPlayerIds?: User.Id[];
+      invitedPlayerIds: User.Id[];
     },
-  ): void /* TODO */ | BadRequestResponse | UnauthorizedResponse;
+  ): TournamentKey | BadRequestResponse | UnauthorizedResponse;
 
-  @route("{roomId}/join")
-  @post
-  join(
-    @path roomId: string,
-  ): GameRoomConnection | UnauthorizedResponse | NotFoundResponse;
-
-  @route("{tournamentId}/join-tournament")
+  @doc("Join tournament registration. Receives key to join websocket tournament lobby.")
+  @route("{tournamentId}/join")
   @post
   joinTournament(
     @path tournamentId: string,
-  ): void /* TODO */ | UnauthorizedResponse | NotFoundResponse;
+  ): TournamentKey | ConflictResponse | UnauthorizedResponse | NotFoundResponse;
 
-  @route("reconnect")
-  @post
-  reconnect(
-    @body body: {
-      queueKey: string;
-    },
-  ):
-    | GameRoomConnection
-    | BadRequestResponse
-    | UnauthorizedResponse
-    | NotFoundResponse;
+  @doc("Decline tournament invite to register.")
+  @route("{tournamentId}/decline")
+  @delete
+  decline(
+  @path tournamentId: string,
+  ): void | NotFoundResponse | UnauthorizedResponse;
 }
 
+/* SSE models */
+/* WILL NEED RESPONSE OTHERWISE WONT HAVE THE RIGHT NUMBER OF TOKENS IF INVITING MANY*/
 model GameInvite {
   id?: string;
   event: "GameInvite";
-  from: Username;
-  roomId: string;
+  gameId: string;
+  from: User.Id;
+}
+
+model TournamentInvite {
+	id?: string;
+	event: "TournamentInvite";
+	tournamentId: string;
+	from: User.Id;
 }
 
 model FriendRequest {
@@ -395,7 +467,8 @@ model FriendRequest {
   from: Username;
 }
 
-alias ServerMessage = GameInvite | FriendRequest;
+// TDB for other matchmaking SSE.
+alias ServerMessage = GameInvite | TournamentInvite | FriendRequest;
 
 @tag("Events")
 @useAuth(BearerAuth)

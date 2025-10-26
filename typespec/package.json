@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "tsp compile ."
+    "build": "tsp compile main.tsp --output-dir . && tsp compile internal-api.tsp --output-dir . && tsp compile webhooks.tsp --output-dir . && rm -f schema/openapi.yaml"
   },
   "dependencies": {
     "@typespec/compiler": "latest",
