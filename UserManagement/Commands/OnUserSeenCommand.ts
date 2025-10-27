@@ -13,6 +13,8 @@ export class OnUserSeenCommand extends CommandBase {
 		private notifManager: MessagesQueueManager) { super(); }
 
 	execute(userId: user_id) {
+		
+		console.log(`[SERVER] OnUserSeenCommand START ${userId}`); //debug
 		const previousStatus = this.userManager.getUserByID(userId)?.status || UserStatus.OFFLINE;
 		const user = this.userManager.onUserSeen(userId);
 		this.friendManager.loadUser(userId);
@@ -25,6 +27,9 @@ export class OnUserSeenCommand extends CommandBase {
 				}
 			}
 		}
+		this.friendManager.printFullState();//debug
+		this.userManager.printUserManager();//debug
+		console.log('[SERVER] OnUserSeenCommand END'); //debug
 	}
 }
 

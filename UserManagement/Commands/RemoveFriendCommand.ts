@@ -14,6 +14,7 @@ export class RemoveFriendCommand extends CommandBase {
 	) { super() }
 
 	execute(user_id: user_id, friend_id: user_id): CommandResult {
+		console.log('[COMMAND] RemoveFriendCommand START'); //debug
 		const user = this.userManager.getUserByID(user_id);
 		const userNode = this.friendManager.getUserNode(user_id);
 		const friendNode = this.friendManager.getUserNode(friend_id);
@@ -30,17 +31,15 @@ export class RemoveFriendCommand extends CommandBase {
 		}
 
 		this.friendManager.upsertUpdate({
-			sender_id: friend_id,
-			receiver_id: user_id,
-			status: FriendRequestStatus.REFUSED
-		});
-
-		this.friendManager.upsertUpdate({
 			sender_id: user_id,
 			receiver_id: friend_id,
 			status: FriendRequestStatus.REFUSED
 		});
 
+		this.friendManager.printFullState();//debug
+		this.userManager.printUserManager();//debug
+		console.log('[COMMAND] RemoveFriendCommand END'); //debug
 		return ({ success: true, errors: [] });
+
 	}
 }

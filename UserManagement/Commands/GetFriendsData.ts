@@ -16,6 +16,9 @@ export class GetFriendsData extends CommandBase {
 		const ids_list = this.friendManager.getFriendList(user_id);
 		result.data = this.userManager.getPublicBatchByIDs(ids_list);
 		result.success = true;
+				this.friendManager.printFullState();//debug
+		this.userManager.printUserManager();//debug
+		console.log('[COMMAND] GetFriends END'); //debug
 		return result;
 	}
 

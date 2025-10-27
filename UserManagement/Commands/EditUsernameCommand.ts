@@ -12,16 +12,16 @@ export interface UserValidationResult {
 }
 
 export enum UsernameErrors {
-    TOO_SHORT = "TOO_SHORT",
-    TOO_LONG = "TOO_LONG",
-    INVALID_CHARACTERS = "INVALID_CHARACTERS", // caractères invalides
-    ALREADY_TAKEN = "ALREADY_TAKEN",
-    DOES_NOT_EXIST = "DOES_NOT_EXIST",
+	TOO_SHORT = "TOO_SHORT",
+	TOO_LONG = "TOO_LONG",
+	INVALID_CHARACTERS = "INVALID_CHARACTERS", // caractères invalides
+	ALREADY_TAKEN = "ALREADY_TAKEN",
+	DOES_NOT_EXIST = "DOES_NOT_EXIST",
 }
 
 
 
-@CommandManager.register(UserManager)
+@CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
 export class EditUsernameCommand extends CommandBase {
 
 	private readonly VALID_USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
@@ -71,11 +71,15 @@ export class EditUsernameCommand extends CommandBase {
 			previousname = user.name;
 			user.name = username;
 			this.userManager.saveUser(user_id); //need to decide when to save, do i prefer batch operation or on modification saves
+			this.userManager.removeName(previousname);
 		}
 		else
 			return { success: false, errors: [UsernameErrors.DOES_NOT_EXIST] };
 
 		this.notifyFriends(user_id, previousname, username);
+		this.friendManager.printFullState();//debug
+		this.userManager.printUserManager();//debug
+		console.log('[COMMAND] ChangeUsername END'); //debug
 		return { success: true, errors: [] };
 	}
 }

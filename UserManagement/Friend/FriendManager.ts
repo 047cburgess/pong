@@ -15,6 +15,7 @@ export enum FriendRequestStatus {
 }
 
 export interface FriendRequest {
+	request_id: string;
 	sender_id: user_id;
 	receiver_id: user_id;
 	status: FriendRequestStatus;
@@ -31,12 +32,9 @@ export class FriendManager extends ManagerBase {
 	private graph: Map<user_id, UserNode> = new Map();
 
 	// Updated request waiting to get saved in the db
-	private requests: FriendRequest[] = [];
-	//bidirectional "indexation" for O(1) access
-	private senderIndex: Map<user_id, Map<friend_id, number>> = new Map();
-	private receiverIndex: Map<user_id, Set<number>> = new Map();
-
-	private toremove: { a: user_id, b: user_id }[] = [];
+	private requests: Map<string, FriendRequest> = new Map();
+	//user_id to request_id (Min_id:Max_id)
+	private idToRequests: Map<user_id, Set<string>> = new Map();
 
 	constructor(private db: DbManager) {
 		super();
@@ -44,21 +42,22 @@ export class FriendManager extends ManagerBase {
 
 	// ----------------- Loading -----------------
 
-	async loadUser(user_id: user_id) {
+	loadUser(user_id: user_id) {
 		if (this.graph.has(user_id)) return; //already loaded
 
 		const node: UserNode = { friends: new Set(), incomingRequests: new Set(), outgoingRequests: new Set() };
 
-		const sent = this.senderIndex.get(user_id);
-		if (sent) for (const [, idx] of sent) this.applyRequest(user_id, node, this.requests[idx]!);
-
-		const received = this.receiverIndex.get(user_id);
-		if (received) for (const idx of received) this.applyRequest(user_id, node, this.requests[idx]!);
+		const requests = this.idToRequests.get(user_id);
+		if (requests) {
+			for (const req_id of requests) {
+				const req = this.requests.get(req_id);
+				if (req) this.applyRequest(user_id, node, req);
+			}
+		}
 
 		const dbRequests = this.db.getFriendRequestsForUser(user_id);
 		for (const req of dbRequests) {
-			//if not already loaded from cache 
-			if (this.senderIndex.get(req.sender_id)?.get(req.receiver_id) === undefined) {
+			if (!this.idToRequests.get(user_id)?.has(req.request_id)) {
 				this.applyRequest(user_id, node, req);
 			}
 		}
@@ -84,32 +83,28 @@ export class FriendManager extends ManagerBase {
 	// ----------------- Friend Requests -----------------
 
 	//Upsert an update into the requests buffer (modify existing update if present, else push new)
-	upsertUpdate(update: FriendRequest) {
+	upsertUpdate(update: Omit<FriendRequest, 'request_id'>) {
 		const { sender_id: sender, receiver_id: receiver, status } = update;
+		const request_id = sender < receiver ? `${sender}:${receiver}` : `${receiver}:${sender}`;
 
-		if (status === FriendRequestStatus.REFUSED)
-			this.toremove.push({ a: sender, b: receiver });
-		
-		let idx = this.senderIndex.get(sender)?.get(receiver);
-		if (idx !== undefined) {
-			const req = this.requests[idx];
-			if (req) {
-				const oldStatus = req.status;
-				req.status = status;
-				this.updateNodes(sender, receiver, oldStatus, status);
-			}
+		if (this.requests.has(request_id)) {
+			const req = this.requests.get(request_id)!;
+			const oldStatus = req.status;
+			req.status = status;
+			req.sender_id = sender;
+			req.receiver_id = receiver;
+			this.updateNodes(sender, receiver, oldStatus, status);
 			return;
 		}
-		idx = this.requests.length;
-		this.requests.push(update);
-		if (!this.senderIndex.has(sender)) this.senderIndex.set(sender, new Map());
-		this.senderIndex.get(sender)!.set(receiver, idx);
-		if (!this.receiverIndex.has(receiver)) this.receiverIndex.set(receiver, new Set());
-		this.receiverIndex.get(receiver)!.add(idx);
+
+		const fullRequest: FriendRequest = { ...update, request_id };
+		this.requests.set(request_id, fullRequest);
+		if (!this.idToRequests.has(sender)) this.idToRequests.set(sender, new Set());
+		this.idToRequests.get(sender)!.add(request_id);
+		if (!this.idToRequests.has(receiver)) this.idToRequests.set(receiver, new Set());
+		this.idToRequests.get(receiver)!.add(request_id);
 
 		this.updateNodes(sender, receiver, null, status);
-
-
 	}
 
 	private updateNodes(sender: user_id, receiver: user_id, oldStatus: FriendRequestStatus | null, newStatus: FriendRequestStatus) {
@@ -164,21 +159,22 @@ export class FriendManager extends ManagerBase {
 		but is it worth it, that means checking the status of each new request
 	*/
 	saveAll() {
-		if (this.requests.length === 0) return;
+		if (this.requests.size === 0) return;
 
-		this.db.saveFriendRequests(this.requests);
-		this.db.RemoveFriendRequests(this.toremove);
+		this.db.saveFriendRequests(Array.from(this.requests.values()));
 
-		this.requests = [];
-		this.toremove = [];
-		this.senderIndex.clear();
-		this.receiverIndex.clear();
+		this.requests.clear();
+		this.idToRequests.clear();
 	}
 
 	// ----------------- Unload - Remove -----------------
 
 	removeUser(user_id: user_id) {
 		this.unloadUser(user_id);
+		const requests = this.idToRequests.get(user_id);
+		if (requests)
+			for (const req_id of requests)
+				this.requests.delete(req_id);
 		this.db.RemoveAllUserFriendRequests(user_id);
 	}
 
@@ -199,12 +195,12 @@ export class FriendManager extends ManagerBase {
 		console.log("\n╔════════════════════════════════════════╗");
 		console.log("║        FRIEND MANAGER STATE            ║");
 		console.log("╚════════════════════════════════════════╝");
-		
+
+		// ---------- USER GRAPH ----------
 		console.log("\n📊 USER GRAPH");
 		console.log("─".repeat(42));
-		if (this.graph.size === 0) {
-			console.log("  (empty)");
-		} else {
+		if (this.graph.size === 0) console.log("  (empty)");
+		else {
 			for (const [uid, node] of this.graph.entries()) {
 				console.log(`\n👤 User ${uid}:`);
 				printCollection("  👥 Friends", node.friends);
@@ -212,46 +208,29 @@ export class FriendManager extends ManagerBase {
 				printCollection("  📤 Outgoing Requests", node.outgoingRequests);
 			}
 		}
+
+		// ---------- REQUESTS CACHE ----------
 		console.log("\n\n📝 REQUESTS CACHE");
 		console.log("─".repeat(42));
-		if (this.requests.length === 0) {
-			console.log("  (empty)");
-		} else {
-			this.requests.forEach((req, idx) => {
-				const statusIcon = req.status === FriendRequestStatus.ACCEPTED ? "✅" :
-					req.status === FriendRequestStatus.PENDING ? "⏳" : "❌";
-				console.log(`  [${idx}] ${statusIcon} ${req.sender_id} → ${req.receiver_id} (${FriendRequestStatus[req.status]})`);
-			});
-		}
-		console.log("\n\n🔗 SENDER INDEX");
-		console.log("─".repeat(42));
-		if (this.senderIndex.size === 0) {
-			console.log("  (empty)");
-		} else {
-			for (const [sender, map] of this.senderIndex.entries()) {
-				console.log(`  Sender ${sender}:`);
-				for (const [receiver, idx] of map.entries()) {
-					console.log(`    → ${receiver} = requests[${idx}]`);
-				}
+		if (this.requests.size === 0) console.log("  (empty)");
+		else {
+			let i = 0;
+			for (const req of this.requests.values()) {
+				const statusIcon =
+					req.status === FriendRequestStatus.ACCEPTED ? "✅" :
+						req.status === FriendRequestStatus.PENDING ? "⏳" : "❌";
+				console.log(`  [${i++}] ${statusIcon} ${req.sender_id} → ${req.receiver_id} (${req.request_id})`);
 			}
 		}
-		console.log("\n🔗 RECEIVER INDEX");
+
+		// ---------- ID TO REQUESTS ----------
+		console.log("\n\n🔗 ID TO REQUESTS");
 		console.log("─".repeat(42));
-		if (this.receiverIndex.size === 0) {
-			console.log("  (empty)");
-		} else {
-			for (const [receiver, set] of this.receiverIndex.entries()) {
-				printCollection(`  Receiver ${receiver}`, set);
+		if (this.idToRequests.size === 0) console.log("  (empty)");
+		else {
+			for (const [uid, set] of this.idToRequests.entries()) {
+				printCollection(`  User ${uid}`, set);
 			}
-		}
-		console.log("\n🗑️  TO REMOVE");
-		console.log("─".repeat(42));
-		if (this.toremove.length === 0) {
-			console.log("  (empty)");
-		} else {
-			this.toremove.forEach((pair, idx) => {
-				console.log(`  [${idx}] ${pair.a} ↔ ${pair.b}`);
-			});
 		}
 
 		console.log("\n" + "═".repeat(42) + "\n");

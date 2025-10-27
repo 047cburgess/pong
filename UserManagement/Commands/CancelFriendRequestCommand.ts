@@ -33,6 +33,9 @@ export class CancelFriendRequestCommand extends CommandBase {
 			status: FriendRequestStatus.REFUSED
 		});
 
+				this.friendManager.printFullState();//debug
+		this.userManager.printUserManager();//debug
+		console.log('[COMMAND] CancelRequest END'); //debug
 		return { success: true, errors: [] };
 	}
 }

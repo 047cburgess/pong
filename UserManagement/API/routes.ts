@@ -51,7 +51,7 @@ server.get("/user/friends/:username", { preHandler: resolveUserId }, async (requ
 	get incoming(pending) friendrequest
 */
 //could add a prehandler to manage the auth and user_id extraction
-server.get("/user/friends/requests", async (request, reply) => {
+server.get("/user/friends/requests", { preHandler: onUserSeen }, async (request, reply) => {
 	const user_id = request.sender_id;
 	const result =  CommandManager.get(GetIncomingFriendRequestCommand).execute(user_id!);
 	if (result.success)
@@ -63,9 +63,9 @@ server.get("/user/friends/requests", async (request, reply) => {
 /*
 	get outgoing(pending) friendrequest
 */
-server.get("/user/friends/requests/outgoing", async (request, reply) => {
+server.get("/user/friends/requests/outgoing", { preHandler: onUserSeen }, async (request, reply) => {
 	const user_id = request.sender_id;
-	const result =  CommandManager.get(GetOutgoingFriendRequestCommand).execute(user_id!);
+	const result = CommandManager.get(GetOutgoingFriendRequestCommand).execute(user_id!);
 	if (result.success)
 		reply.status(200).send(result.data);
 	else //probably will add a better error management
@@ -160,7 +160,7 @@ server.get("/user/:username/id", { preHandler: [resolveUserId] }, async (request
 /*
 	returns userdata of sender 
 */
-server.get("/user/", { preHandler: [onUserSeen] }, async (request, reply) => {
+server.get("/user", { preHandler: [onUserSeen] }, async (request, reply) => {
 	const user_id = request.sender_id!;
 	const result =  CommandManager.get(GetUserDataCommand).execute(user_id);
 	if (result.success)
@@ -192,7 +192,7 @@ server.put("/user/username", {preHandler : onUserSeen}, async (request, reply) =
 
 })
 
-server.delete("/user/", {preHandler : onUserSeen} ,async (request, reply) => {
+server.delete("/user", {preHandler : onUserSeen} ,async (request, reply) => {
 	const user_id = request.sender_id!;
 	const result =  CommandManager.get(RemoveUserCommand).execute(user_id);
 	if(result.success)

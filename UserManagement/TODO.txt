@@ -3,15 +3,14 @@ Add the script to clean regularly clean the absent users from cache
 
 DatabaseManage:
 	add ways to do everything intransactions
+	adapt the tables to now register request_id
 
 Commands:
 	data retrieving command that do multiple calls to the db should be done through transaction (could be technically added in the db manager)
 	add specific/generic errors
 
 usermanager:
-	userRemoval Management
-	user creation Management
-
+	remove old name from map username->id onUsernameChange
 
 AvatarManager:
 	Manage the upload/deletion/modification/retrieval of avatars 
@@ -97,4 +96,7 @@ API
 	DELETE /user/friends/request/:username : tries to refuse a request
 	DELETE /user/friends/request/outgoing/:username : tries to cancel a request
 	DELETE /user/friends/:username : tries to remove a friend
+
+Errors:
+
 

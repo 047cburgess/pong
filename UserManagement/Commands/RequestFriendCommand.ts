@@ -6,8 +6,8 @@ import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
 import { AcceptFriendRequestCommand } from "./AcceptFriendRequestCommand";
 
 export enum FriendRequestError {
-    REQUEST_SELF = "SelfRequest",
-    REQUEST_ALREADY = "AlreadyRequested",
+	REQUEST_SELF = "SelfRequest",
+	REQUEST_ALREADY = "AlreadyRequested",
 	REQUEST_UNDEFINED = "UndefinedRequest",
 	USER_UNDEFINED = "UndefinedUser",
 	FRIEND_ALREADY = "AlreadyFriend",
@@ -24,6 +24,7 @@ export class RequestFriendCommand extends CommandBase {
 	) { super() }
 
 	execute(sender_id: user_id, receiver_id: user_id): CommandResult {
+		console.log('[COMMAND] RequestFriend START'); //debug
 		const sender = this.userManager.getOrLoadUserByID(sender_id);
 		const senderNode = this.friendManager.getUserNode(sender_id);
 
@@ -32,11 +33,11 @@ export class RequestFriendCommand extends CommandBase {
 
 		if (!sender || !senderNode)
 			return { success: false, errors: [FriendRequestError.USER_UNDEFINED] }; //should never happen since we assume onUserSeen as prehandler 
-		if(senderNode.friends.has(receiver_id))
-			return { success: false, errors: [FriendRequestError.FRIEND_ALREADY]};
-		if(senderNode.outgoingRequests.has(receiver_id))
-			return { success: false, errors: [FriendRequestError.FRIEND_ALREADY]}; // should not happen either if client isn't fraudulent 
-		
+		if (senderNode.friends.has(receiver_id))
+			return { success: false, errors: [FriendRequestError.FRIEND_ALREADY] };
+		if (senderNode.outgoingRequests.has(receiver_id))
+			return { success: false, errors: [FriendRequestError.FRIEND_ALREADY] }; // should not happen either if client isn't fraudulent 
+
 		if (senderNode.incomingRequests.has(receiver_id)) {
 			return CommandManager.get(AcceptFriendRequestCommand).execute(sender_id, receiver_id);
 		}
@@ -51,6 +52,9 @@ export class RequestFriendCommand extends CommandBase {
 			this.messageManager.push(receiver_id, { type: MessagesTypes.FRIENDREQUEST_RECEIVED, data: { from: sender.name } })
 		}
 
+		this.friendManager.printFullState();//debug
+		this.userManager.printUserManager();//debug
+		console.log('[COMMAND] RequestFriend END'); //debug
 		return { success: true, errors: [] };
 	}
 

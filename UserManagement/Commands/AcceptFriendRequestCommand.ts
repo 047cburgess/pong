@@ -40,6 +40,9 @@ export class AcceptFriendRequestCommand extends CommandBase {
 			senderNode.friends.add(receiver_id);
 		}
 
+		this.friendManager.printFullState();//debug
+		this.userManager.printUserManager();//debug
+		console.log('[COMMAND] AcceptRequest END'); //debug
 		return { success: true, errors: [] };
 	}
 }

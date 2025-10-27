@@ -17,7 +17,7 @@ export class RemoveUserCommand extends CommandBase {
 
 
 	execute(user_id: user_id): CommandResult {
-		const username = (this.userManager.getOrLoadUserByID(user_id))!.name;
+		console.log('[COMMAND] RemoveUserCommand START'); //debug
 		const userNode = this.friendManager.getUserNode(user_id);
 		if (userNode) {
 			for (const id of userNode!.friends)
@@ -31,6 +31,10 @@ export class RemoveUserCommand extends CommandBase {
 		this.userManager.removeUser(user_id);
 		this.friendManager.removeUser(user_id);
 		this.messageManager.clear(user_id);
+
+		this.friendManager.printFullState();//debug
+		this.userManager.printUserManager();//debug
+		console.log('[COMMAND] RemoveUserCommand END'); //debug
 		return { success: true, errors: [] };
 	}
 }

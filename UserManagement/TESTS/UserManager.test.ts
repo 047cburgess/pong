@@ -6,38 +6,6 @@ import { DbManager } from "../MOCKS/MOCK_DbManager";
 //claude generated tests
 // ============ FONCTION DE PRINT ============
 
-function printUserManager(um: UserManager) {
-	console.log("\n╔════════════════════════════════════════╗");
-	console.log("║         USER MANAGER STATE             ║");
-	console.log("╚════════════════════════════════════════╝");
-	
-	console.log(`\n📊 Number of users in cache: ${um.getCachedCount()}`);
-	
-	console.log("\n👤 Cached users:");
-	const users = (um as any).users as Map<number, UserData>;
-	if (users.size === 0) {
-		console.log("  (empty)");
-	} else {
-		for (const [id, user] of users.entries()) {
-			console.log(`  • ID: ${id}`);
-			console.log(`    Name: ${user.name}`);
-			console.log(`    Status: ${UserStatus[user.status]}`);
-			console.log(`    Last activity: ${new Date(user.last_seen).toLocaleString()}`);
-		}
-	}
-	
-	console.log("\n🔗 Name -> ID Map:");
-	const nameMap = (um as any).nameToId as Map<string, number>;
-	if (nameMap.size === 0) {
-		console.log("  (empty)");
-	} else {
-		for (const [name, id] of nameMap.entries()) {
-			console.log(`  • "${name}" -> ${id}`);
-		}
-	}
-	
-	console.log("\n" + "═".repeat(42) + "\n");
-}
 
 // ============ TESTS EXHAUSTIFS ============
 
@@ -58,7 +26,7 @@ function runTests() {
 
 	// Test 1: État initial
 	console.log("--- État initial ---");
-	printUserManager(um);
+	um.printUserManager();
 
 	// Test 2: createDefault
 	console.log("--- Test createDefault ---");
@@ -68,14 +36,14 @@ function runTests() {
 	assert(user1.status === UserStatus.ONLINE, "status ONLINE");
 	assert(um.hasCached(1), "user en cache");
 	assert(um.getCachedCount() === 1, "1 user en cache");
-	printUserManager(um);
+	um.printUserManager();
 
 	// Test 3: createDefault sans nom
 	console.log("--- Test createDefault sans nom ---");
 	const user2 = um.createDefault(2);
 	assert(user2.name.length > 0, "nom généré");
 	assert(um.getCachedCount() === 2, "2 users en cache");
-	printUserManager(um);
+	um.printUserManager();
 
 	// Test 4: resolveUsername
 	console.log("--- Test resolveUsername ---");
@@ -112,7 +80,7 @@ function runTests() {
 	const seenUser = um.onUserSeen(1);
 	assert(seenUser.last_seen > oldTime, "last_seen mis à jour");
 	assert(seenUser.status === UserStatus.ONLINE, "status ONLINE");
-	printUserManager(um);
+	um.printUserManager();
 
 	// Test 10: toPublic
 	console.log("--- Test toPublic ---");
@@ -145,37 +113,37 @@ function runTests() {
 	um.unloadUser(2);
 	assert(um.getCachedCount() === 1, "user2 déchargé du cache");
 	assert(!um.hasCached(2), "user2 plus en cache");
-	printUserManager(um);
+	um.printUserManager();
 
 	// Test 15: removeUser
 	console.log("--- Test removeUser ---");
 	um.removeUser(1);
 	assert(um.getCachedCount() === 0, "user1 supprimé du cache");
-	printUserManager(um);
+	um.printUserManager();
 
 	// Test 16: clearCache
 	console.log("--- Test clearCache ---");
 	um.createDefault(3, "Charlie");
-	printUserManager(um);
+	um.printUserManager();
 	um.clearCache();
 	assert(um.getCachedCount() === 0, "cache vidé");
-	printUserManager(um);
+	um.printUserManager();
 
 	// Test 17: unloadInactiveUsers
 	console.log("--- Test unloadInactiveUsers ---");
 	const user4 = um.createDefault(4, "Dave");
 	user4.last_seen = Date.now() - 1000 * 60 * 10; // 10 min ago
-	printUserManager(um);
+	um.printUserManager();
 	um.unloadInactiveUsers();
 	assert(!um.hasCached(4), "user inactif déchargé");
-	printUserManager(um);
+	um.printUserManager();
 
 	console.log("=== FIN DES TESTS ===");
 }
 
 // ============ EXPORT ============
 
-export { runTests, printUserManager };
+export { runTests};
 
 if (require.main === module) {
 	runTests();

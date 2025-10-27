@@ -1,11 +1,9 @@
 import { FriendManager } from "../Friend/FriendManager";
-import { MessagesQueueManager } from "../MesssageQueue/MessagesQueueManager";
 import { PublicUserData, user_id } from "../UserData/User";
 import { UserManager } from "../UserData/UserManager";
 import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
-import { FriendRequestError } from "./RequestFriendCommand";
 
-@CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
+@CommandManager.register(UserManager, FriendManager)
 export class GetIncomingFriendRequestCommand extends CommandBase{
 	constructor(
 		private userManager : UserManager,
@@ -18,7 +16,9 @@ export class GetIncomingFriendRequestCommand extends CommandBase{
 		const pendinglist = this.friendManager.getPendingRequests(user_id);
 
 		friendList = this.userManager.getPublicBatchByIDs(Array.from(pendinglist));
-		
+		this.friendManager.printFullState();//debug
+		this.userManager.printUserManager();//debug
+		console.log('[COMMAND] GetIncomingRequestFriend END'); //debug
 		return ({success: true, errors : [], data : friendList});
 	}
 }

@@ -18,6 +18,9 @@ export class GetOutgoingFriendRequestCommand extends CommandBase{
 
 		friendList = this.userManager.getPublicBatchByIDs(Array.from(pendinglist));
 
+		this.friendManager.printFullState();//debug
+		this.userManager.printUserManager();//debug
+		console.log('[COMMAND] GetOutgoingRequest END'); //debug
 		return ({success: true, errors : [], data : friendList});
 	}
 }

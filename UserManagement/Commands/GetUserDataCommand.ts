@@ -13,6 +13,7 @@ export class GetUserDataCommand extends CommandBase {
 		const user = this.userManager.getPublicByID(user_id);
 		if (!user)
 			return ({ success: false, errors: [FriendRequestError.USER_UNDEFINED] });
+		console.log('[COMMAND] GetUserData END'); //debug
 		return ({ success: true, errors: [], data: user });
 	}
 }

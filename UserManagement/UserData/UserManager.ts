@@ -30,6 +30,10 @@ export class UserManager extends ManagerBase {
 		this.nameToId.delete(user.name);
 	}
 
+	removeName(username: string) {
+		this.nameToId.delete(username);
+	}
+
 	hasCached(id: user_id): boolean {
 		return this.users.has(id);
 	}
@@ -192,5 +196,36 @@ export class UserManager extends ManagerBase {
 		}
 		return result;
 	}
+
+	printUserManager() {
+		console.log("\n╔════════════════════════════════════════╗");
+		console.log("║         USER MANAGER STATE             ║");
+		console.log("╚════════════════════════════════════════╝");
+
+		console.log(`\n📊 Number of users in cache: ${this.getCachedCount()}`);
+
+		console.log("\n👤 Cached users:");
+
+		if (this.users.size === 0) {
+			console.log("  (empty)");
+		} else {
+			for (const [id, user] of this.users.entries()) {
+				console.log(`  • ID: ${id}`);
+				console.log(`    Name: ${user.name}`);
+				console.log(`    Status: ${UserStatus[user.status]}`);
+				console.log(`    Last activity: ${new Date(user.last_seen).toLocaleString()}`);
+			}
+		}
+		console.log("\n🔗 Name -> ID Map:");
+		if (this.nameToId.size === 0) {
+			console.log("  (empty)");
+		} else {
+			for (const [name, id] of this.nameToId.entries()) {
+				console.log(`  • "${name}" -> ${id}`);
+			}
+		}
+		console.log("\n" + "═".repeat(42) + "\n");
+	}
+
 }
 

@@ -1,4 +1,5 @@
 import { ManagerRegistry } from "../ManagerRegistry";
+import "reflect-metadata";
 
 export interface CommandResult<T = void>{
 	success : boolean;
@@ -37,11 +38,21 @@ export class CommandManager {
 	}
 
 	private registerCommands() {
-		for (const { Command, deps } of CommandManager.registeredCommands) {
-			const instances = deps.map(dep => this.managerRegistry.get(dep)) as InstanceType<AnyManagerConstructor>[];
-			const command = new (Command as CommandCtorAcceptingManagers)(...instances);
-			CommandManager.commands.set(Command, command);
+			for (const { Command, deps } of CommandManager.registeredCommands) {
+		// Vérification du constructeur
+		const paramTypes = Reflect.getMetadata("design:paramtypes", Command) as any[] || [];
+		if (paramTypes.length !== deps.length) {
+			throw new Error(
+				`Command ${Command.name} constructor expects ${paramTypes.length} manager(s), ` +
+				`but ${deps.length} provided in registration`
+			);
 		}
+
+		// Création de l'instance
+		const instances = deps.map(dep => this.managerRegistry.get(dep)) as InstanceType<AnyManagerConstructor>[];
+		const command = new (Command as CommandCtorAcceptingManagers)(...instances);
+		CommandManager.commands.set(Command, command);
+	}
 	}
 
 	static register = (...deps: AnyManagerConstructor[]) => {
