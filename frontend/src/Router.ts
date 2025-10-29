@@ -16,13 +16,13 @@ export abstract class Page {
 const AUTO_ANIM_PRE = [
   "transition",
   "ease-in-out",
-  "duration-300",
+  "duration-400",
   "opacity-100",
 ];
 const AUTO_ANIM = [
   "transition",
   "ease-in-out",
-  "duration-300",
+  "duration-400",
   "opacity-0",
 ];
 
@@ -60,20 +60,23 @@ export default class Router {
     this.errors[err] = pageCtor;
   }
 
-  navError(err: string | number): void {
-
-  }
-
-  navigate(path: string, pushState: boolean = true): void {
+  navigate(path: string | number, pushState: boolean = true): void {
     if (this.navPending) {
       return;
     }
-    const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+    let routes = this.routes;
+    if (typeof path === 'number') {
+      routes = this.errors;
+      path = path.toString();
+    }
+    let cleanPath = path.startsWith("/") ? path.slice(1) : path;
     if (this.currentPath === cleanPath) {
+      this.redraw();
       return;
     }
     this.currentPath = cleanPath;
-    const page = this.routes[cleanPath];
+
+    const page = this.routes[cleanPath.split("?")[0]];
     if (pushState) {
       history.pushState({}, "", `/${cleanPath}`);
     }
@@ -90,24 +93,29 @@ export default class Router {
           this.rootElement.classList.add(...AUTO_ANIM);
         }));
       });
-      delay = 333;
+      delay = 550;
     }
 
     this.navPending = setTimeout(() => {
+      delete this.currentPage;
+      delete this.navPending;
       if (page) {
         try {
           this.currentPage = new page(this);
         } catch (e) {
           if (e instanceof NavError) {
-            this.navError(e.error);
-            return;
+            if (this.errors[e.error]) {
+              this.currentPage = new this.errors[e.error](this);
+            }
+          } else {
+            throw e;
           }
-          throw e;
         }
-      } else if (this.errors[404]) {
-        this.navError(404);
-        return;
-      } else {
+      }
+      if (!this.currentPage && this.errors[404]) {
+        this.currentPage = new this.errors[404](this);
+      }
+      if (!this.currentPage) {
         this.currentPage = {
           router: this,
           content: () => { return []; },
@@ -116,10 +124,10 @@ export default class Router {
           transitionAway: () => { },
         };
       }
-      delete this.navPending;
       this.rootElement.classList.remove(...AUTO_ANIM, ...AUTO_ANIM_PRE);
       this.redraw();
       if (this.currentPage?.transitionIn() === null) {
+        this.rootElement.classList.add(...AUTO_ANIM);
         requestAnimationFrame(() => {
           this.rootElement.classList.add(...AUTO_ANIM);
           requestAnimationFrame(() => {

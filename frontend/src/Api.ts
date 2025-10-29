@@ -1,36 +1,23 @@
+import { components as ApiComponents } from "./PublicAPI";
+
 class ApiAccessor {
   baseRoute: string;
-  cache: Map<RequestInfo | URL, { expires: number, resp: Response }>;
 
   constructor(baseRoute: string) {
     this.baseRoute = baseRoute;
-    this.cache = new Map();
-
-    setInterval(this.cleanup.bind(this), 60000);
   }
 
-  async fetch(
-    input: RequestInfo | URL,
-    force: boolean = false,
-    ttl: number = 300
-  ) {
-    const cache = this.cache.get(input);
-    if (!force && cache && Date.now() < cache.expires) {
-      return cache.resp;
-    }
-    const resp = await fetch(this.baseRoute + input);
-    this.cache.set(input, { expires: Date.now() + ttl * 1000, resp });
-    return resp;
-  }
-
-  private cleanup() {
-    const now = Date.now();
-    for (let [key, val] of this.cache.entries()) {
-      if (now > val.expires) {
-        this.cache.delete(key);
-      }
-    };
+  async fetch(input: RequestInfo | URL) {
+    return await fetch(this.baseRoute + input);
   }
 }
 
 export const API = new ApiAccessor("/api/v1");
+
+export type ApiSchemas = ApiComponents["schemas"];
+
+export type GameResult = ApiSchemas["GameResult"];
+export type GameResultExt = GameResult & { playerInfos: UserInfo[], thisUser?: number };
+export type GameStats = ApiSchemas["GameStats"];
+export type UserInfo = ApiSchemas["User.PublicInfo"];
+export type SelfInfo = ApiSchemas["User.PublicInfo"] & ApiSchemas["User.PrivateInfo"];

@@ -1,3 +1,4 @@
+import { APP } from "../App";
 import Router, { Page } from "../Router";
 import { Div, AElement, Label, Textbox } from "./elements/Elements";
 
@@ -10,7 +11,7 @@ export default class LoginPage extends Page {
 
   constructor(router: Router) {
     super(router);
-    this.loggedOn = false; // TODO(Vaiva): Check if logged on
+    this.loggedOn = !!APP.userInfo;
   }
 
   content(): AElement[] {
@@ -28,11 +29,12 @@ export default class LoginPage extends Page {
       ]),
       this.loginButton,
     ];
+
+    // TODO(Vaiva): OAuth
   }
 
   bindEvents(): void {
     if (this.loggedOn) {
-      // TODO(Vaiva): Reroute if logged on
       this.router.navigate("");
       return;
     }
@@ -46,7 +48,7 @@ export default class LoginPage extends Page {
         return;
       }
 
-      // TODO(Vaiva): auth, JWT, etc
+      // TODO(Vaiva): post auth
       if (user.value === "vaiva" && pass.value === "123") {
         this.router.navigate("dashboard");
         this.loggedOn = true;

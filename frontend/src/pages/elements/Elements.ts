@@ -10,8 +10,14 @@ export abstract class AElement {
     return this;
   }
 
-  class(c: string = ""): AElement {
-    this.classes.push(c);
+  class(c: string | Iterable<string> = ""): AElement {
+    if (typeof c === 'string') {
+      this.classes.push(c);
+    } else {
+      for (const x of c) {
+        this.classes.push(x);
+      }
+    }
     return this;
   }
 
@@ -27,7 +33,7 @@ export abstract class AElement {
     if (this.id) {
       res += `id="${this.id}" `;
     }
-    if (this.classes) {
+    if (this.classes.length) {
       res += `class="${this.classes.join(" ")}" `;
     }
     return res;
@@ -87,6 +93,7 @@ export class Div extends AElement {
       return;
     }
     self.innerHTML = this.contents.map(e => e.render()).join("");
+    this.bindEvents();
   }
 }
 
@@ -160,6 +167,10 @@ export class Inline extends AElement {
 
   render(): string {
     return this.value;
+  }
+
+  class(_?: string | Iterable<string>): AElement {
+    return this;
   }
 };
 

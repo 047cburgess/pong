@@ -1,21 +1,15 @@
-import { API } from "../Api";
+import { API, GameResultExt, GameStats, UserInfo } from "../Api";
 import { APP } from "../App";
 import Router, { NavError, Page } from "../Router";
-import { AElement, Div, Inline, Paragraph } from "./elements/Elements";
-
-type GameData = {
-  date: Date,
-  result: "W" | "L" | "D",
-  players: string[],
-  scores: number[],
-  id: string,
-};
-
-type UserInfo = {
-  avatar?: string,
-  username: string,
-  isOnline: boolean,
-};
+import {
+  AVATAR_DIV, DEFAULT_BUTTON, HOW_TO_CENTER_A_DIV,
+  MUTED_TEXT, OFFLINE_GRAY, ONLINE_GREEN
+} from "./elements/CssUtils";
+import { AElement, Div, Image, Inline, Paragraph } from "./elements/Elements";
+import { GameCardBase, GameCardLarge } from "./elements/GameCard";
+import { ICON_ADD_FRIEND, ICON_CROSSED_SWORDS, ICON_FRIEND_ADDED } from "./elements/SvgIcons";
+import { paths as ApiPaths } from "../PublicAPI";
+import { userFromMaybeId } from "../Util";
 
 const TILE_ANIM_KEY1 = ["opacity-0"];
 const TILE_ANIM_KEY2 = ["opacity-100"];
@@ -23,118 +17,19 @@ const TILE_ANIM_KEY2 = ["opacity-100"];
 const TILE_STYLES: string
   = "outline-0 rounded-xl outline-neutral-700 p-4";
 
-const MUTED_TEXT: string = "text-neutral-500";
-
-const CARD_STYLES: string
-  = "flex flex-row p-6 transition duration-200 select-none rounded-xl";
-
-const cardTextFromResult = (r: "W" | "L" | "D"): string => {
-  switch (r) {
-    case "W":
-      return "Victory";
-    case "L":
-      return "Defeat";
-    case "D":
-      return "Draw";
-  }
-};
-
-const cardBgFromResult = (r: "W" | "L" | "D" | undefined): string => {
-  let res = "outline-2 ";
-  switch (r) {
-    case "W":
-      res += "hover:bg-emerald-600/50 outline-emerald-700 bg-emerald-800/50";
-      break;
-    case "L":
-      res += "hover:bg-red-700/50 outline-red-800 bg-red-900/50";
-      break;
-    case "D":
-      res += "hover:bg-gray-500/50 outline-gray-500 bg-gray-600/50";
-      break;
-    case undefined:
-      res += "outline-zinc-600 bg-zinc-700/50";
-      break;
-  }
-  return res;
-};
-
-class GameCardBase extends Div {
-  data?: GameData;
-
-  constructor(data: GameData | undefined) {
-    super();
-    this.data = data;
-
-    this.class(CARD_STYLES);
-    this.class(cardBgFromResult(this.data?.result));
-  }
-}
-
-class GameCardLarge extends GameCardBase {
-  constructor(data: GameData | undefined) {
-    super(data);
-    this.class("divide-solid divide-x-2");
-
-    if (!this.data) {
-      this.contents = [
-        new Paragraph("No recent matches")
-          .class("font-bold text-xl self-center ml-4")
-      ];
-      return;
-    }
-    this.contents = [
-      new Div([
-        new Paragraph(this.data.date.toLocaleString())
-          .class("font-bold text-xs pr-2"),
-        new Paragraph(cardTextFromResult(this.data.result))
-          .class("font-bold text-xl"),
-      ]).class("m-2 ml-4 self-center w-40"),
-      this.scoreDiv().class("grow"),
-    ];
-  }
-
-  private scoreDiv(): Div {
-    if (!this.data) {
-      throw Error("unreachable");
-    }
-    const rows: AElement[] = [];
-    for (let i = 1; i < this.data.scores.length; i++) {
-      rows.push(
-        new Div([
-          new Paragraph(`${this.data.scores[i]}`),
-          new Paragraph(`${this.data.players[i]}`),
-        ]).class("flex flex-row justify-between gap-2")
-      );
-    }
-    return new Div([
-      new Div([
-        new Paragraph(this.data.players[0]),
-        new Paragraph(`${this.data.scores[0]}`),
-      ]).class("flex flex-row self-center justify-between grow ml-4 gap-2"),
-      new Paragraph(" – ").class("self-center m-3"),
-      new Div(rows).class("self-center grow"),
-    ]).class("font-bold flex flex-row ml-2 mr-4 grow justify-between") as Div;
-  }
-}
-
 export default class DashboardPage extends Page {
-  lastGames: GameData[] = [];
-
-  gameStats = { wins: 0, draws: 0, losses: 0 };
-
-  friends: UserInfo[] = [];
-  friendCards?: AElement[];
-
-  historyTitle?: Paragraph;
-  cards: GameCardBase[] = [];
-  seeAll: AElement;
-  friendsTitle?: AElement;
-
-  // TODO(Vaiva): user info schema
   username: string;
-  userInfo?: UserInfo & { nFriends: number };
 
-  tiles?: AElement[];
+  friendState?:
+    "self" | "friend" | "outgoing" | "incoming" | null;
+
+  userInfo?: UserInfo;
+  stats?: GameStats;
+  friends?: UserInfo[];
+
+  recentGames?: GameResultExt[];
+
+  tiles?: Div[];
 
   constructor(router: Router) {
     super(router);
@@ -144,144 +39,13 @@ export default class DashboardPage extends Page {
       username = APP.userInfo?.username ?? null;
     }
     if (!username) {
-      throw new NavError(403);
+      throw new NavError(401);
     }
-
     this.username = username;
 
-    API.fetch(`/users?user=${this.username}`).then(async (r) => {
-      if (r.status !== 200) {
-        this.router.navError(r.status);
-        return;
-      }
-      await new Promise(r => setTimeout(r, 734));
-      this.userInfo = {
-        username: this.username,
-        isOnline: true,
-        nFriends: 31,
-      }; // await r.json();
-      (this.userInfoTile() as Div).redrawInner();
-      (this.friendsTile() as Div).redrawInner();
-    }).catch(_ => { });
-
-    API.fetch(`/friends?user=${this.username}`).then(async (r) => {
-      if (r.status !== 200) {
-        this.router.navError(r.status);
-        return;
-      }
-      await new Promise(r => setTimeout(r, 1654));
-      this.friends = [
-        {
-          username: "Bot1",
-          isOnline: false,
-        },
-        {
-          username: "Bot2",
-          isOnline: true,
-        },
-        {
-          username: "Bot3",
-          isOnline: false,
-        },
-        {
-          username: "Bot4",
-          isOnline: true,
-        },
-        {
-          username: "Bot5",
-          isOnline: true,
-        },
-        {
-          username: "Bot6",
-          isOnline: false,
-        },
-        {
-          username: "Bot7",
-          isOnline: false,
-        },
-      ];
-      const tile = this.friendsTile() as Div;
-      tile.redrawInner();
-      tile.bindEvents();
-    }).catch(_ => { });
-
-    API.fetch(`/games?user=${this.username}`).then(async (r) => {
-      if (r.status !== 200) {
-        this.router.navError(r.status);
-        return;
-      }
-      await new Promise(r => setTimeout(r, 1421));
-      this.lastGames = [
-        {
-          date: new Date(),
-          result: "W",
-          players: [this.username, "Bot1"],
-          scores: [7, 2],
-          id: "mock_game_1",
-        },
-        {
-          date: new Date(),
-          result: "L",
-          players: [this.username, "Bot1", "Bot2"],
-          scores: [2, 5, 3],
-          id: "mock_game_2",
-        },
-        {
-          date: new Date(),
-          result: "D",
-          players: [this.username, "Bot1", "Bot2", "VeryLongUsername"],
-          scores: [5, 4, 3, 5],
-          id: "mock_game_3",
-        },
-        {
-          date: new Date(),
-          result: "W",
-          players: [this.username, "Bot1", "Bot2", "Bot3"],
-          scores: [7, 4, 3, 5],
-          id: "mock_game_4",
-        },
-        {
-          date: new Date(),
-          result: "W",
-          players: [this.username, "Bot1"],
-          scores: [5, 4],
-          id: "mock_game_5",
-        },
-        {
-          date: new Date(),
-          result: "W",
-          players: [this.username, "Bot1"],
-          scores: [5, 1],
-          id: "mock_game_6",
-        },
-      ];
-      // await r.json();
-      const tile = this.matchHistoryTile() as Div;
-      tile.redrawInner();
-      tile.bindEvents();
-    }).catch(_ => { });
-
-    API.fetch(`/stats?user=${this.username}`).then(async (r) => {
-      if (r.status !== 200) {
-        this.router.navError(r.status);
-        return;
-      }
-      await new Promise(r => setTimeout(r, 532));
-      this.gameStats = {
-        wins: 4,
-        draws: 1,
-        losses: 2,
-      };
-      // await r.json(); // TODO(Vaiva): wrong schema
-      (this.userInfoTile() as Div).redrawInner();
-      (this.matchHistoryTile() as Div).redrawInner();
-    }).catch(_ => { });
-
-    this.seeAll = new GameCardBase(undefined)
-      .class("justify-center hover:bg-zinc-600/50 h-10")
-      .withId("see-all-btn");
-    (this.seeAll as Div).contents
-      = [new Paragraph("See all").class("self-center font-bold")];
+    if (username === APP.userInfo?.username) {
+      this.friendState = "self";
+    }
   }
 
   content(): AElement[] {
@@ -294,7 +58,7 @@ export default class DashboardPage extends Page {
     ];
 
     delete this.tiles;
-    this.tiles = sideLeft.concat(sideRight);
+    this.tiles = sideLeft.concat(sideRight) as Div[];
 
     for (let i = 0; i < this.tiles.length; i++) {
       if (!this.tiles[i].id) {
@@ -312,143 +76,308 @@ export default class DashboardPage extends Page {
     ];
   }
 
-  userInfoTile(): AElement {
+  userInfoTile(): Div {
+    let onlineStatus = new Paragraph("Offline").class("col-span-2").class(OFFLINE_GRAY);
+    const lastSeen = this.userInfo?.lastSeen
+      ? Date.parse(this.userInfo.lastSeen) : 0;
+    if (lastSeen + 4 * 60_000 > Date.now()) {
+      onlineStatus = new Paragraph("Online").class("col-span-2").class(ONLINE_GREEN);
+    }
+
+    const registeredSince = this.userInfo?.registeredSince
+      ? Date.parse(this.userInfo.registeredSince).toLocaleString()
+      : "...";
+
+    const interactButtons: AElement[] = this.interactButtons();
+
     return new Div([
-      new Div([])
-        .class("rounded-full bg-pink-200 aspect-square mb-4 col-span-2 overflow-hidden"),
+      new Div(
+        this.userInfo?.avatarUrl
+          ? [new Image(this.userInfo.avatarUrl)]
+          : [new Paragraph("nothing to see here").class("self-center")]
+      ).class("text-zinc-700/10 bg-zinc-800 mb-4 col-span-2")
+        .class(AVATAR_DIV),
       new Div([
         new Paragraph(this.username).class("font-bold"),
       ]).class("flex flex-row gap-2 text-3xl mb-4 col-span-2"),
-      new Div([
-        new Div([
-          new Inline(
-            /* Friend added logo */
-            // `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM11.53 11A9.53 9.53 0 0 0 2 20.53c0 .81.66 1.47 1.47 1.47h.22c.24 0 .44-.17.5-.4.29-1.12.84-2.17 1.32-2.91.14-.21.43-.1.4.15l-.26 2.61c-.02.3.2.55.5.55h6.4a.5.5 0 0 0 .35-.85l-.02-.03a3 3 0 1 1 4.24-4.24l.53.52c.2.2.5.2.7 0l1.8-1.8c.17-.17.2-.43.06-.62A9.52 9.52 0 0 0 12.47 11h-.94Z" class=""></path><path fill="currentColor" d="M23.7 17.7a1 1 0 1 0-1.4-1.4L18 20.58l-2.3-2.3a1 1 0 0 0-1.4 1.42l3 3a1 1 0 0 0 1.4 0l5-5Z" class=""></path></svg>`
-            /* Add freind logo */
-            `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M19 14a1 1 0 0 1 1 1v3h3a1 1 0 0 1 0 2h-3v3a1 1 0 0 1-2 0v-3h-3a1 1 0 1 1 0-2h3v-3a1 1 0 0 1 1-1Z" class=""></path><path fill="currentColor" d="M16.83 12.93c.26-.27.26-.75-.08-.92A9.5 9.5 0 0 0 12.47 11h-.94A9.53 9.53 0 0 0 2 20.53c0 .81.66 1.47 1.47 1.47h.22c.24 0 .44-.17.5-.4.29-1.12.84-2.17 1.32-2.91.14-.21.43-.1.4.15l-.26 2.61c-.02.3.2.55.5.55h7.64c.12 0 .17-.31.06-.36C12.82 21.14 12 20.22 12 19a3 3 0 0 1 3-3h.5a.5.5 0 0 0 .5-.5V15c0-.8.31-1.53.83-2.07ZM12 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" class=""></path></svg>`
-          )
-            .class("self-center"),
-          new Paragraph("Add friend").class("self-center"),
-        ])
-          .class("flex gap-2 font-bold outline-2 p-1 pl-4 pr-4 -mt-1 mb-3 justify-center items-center")
-          .class("rounded-xl transition duration-200 select-none")
-          .class("outline-zinc-600 bg-zinc-700/50 hover:bg-zinc-600/50 grow"),
-        new Div([
-          new Inline(
-            `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M5.26 12.45c.1.03.18.08.25.14l.52.44 5.26 5.26a1 1 0 0 1 0 1.42l-.58.58a1 1 0 0 1-1.42 0l-1.61-1.61a.25.25 0 0 0-.36 0L6.3 19.7a1 1 0 0 0-.29.7V21a1 1 0 0 1-1 1H3.41a1 1 0 0 1-.7-.3l-.42-.4a1 1 0 0 1-.29-.71V19a1 1 0 0 1 1-1h.59a1 1 0 0 0 .7-.3l1.03-1.02c.1-.1.1-.26 0-.36l-1.61-1.61a1 1 0 0 1 0-1.42l.58-.58a1 1 0 0 1 .97-.26ZM18.01 10.37a1 1 0 0 1-1.4-.11L13.86 7a1 1 0 0 1 0-1.3l2.7-3.18c.28-.34.7-.53 1.14-.53H21a1 1 0 0 1 1 1v3.3c0 .45-.2.86-.53 1.15L18 10.37Z" class=""></path><path fill="currentColor" d="M7.45 2.53A1.5 1.5 0 0 0 6.3 2H3a1 1 0 0 0-1 1v3.3c0 .45.2.86.53 1.15l11.72 9.92c.11.1.12.26.02.36L13.2 18.8a1 1 0 0 0 0 1.42l.58.58a1 1 0 0 0 1.42 0l1.61-1.61c.1-.1.26-.1.36 0l.53.53a1 1 0 0 1 .29.7V21a1 1 0 0 0 1 1h1.59a1 1 0 0 0 .7-.3l.42-.4a1 1 0 0 0 .29-.71V19a1 1 0 0 0-1-1h-.59a1 1 0 0 1-.7-.3l-.53-.52a.25.25 0 0 1 0-.36l1.61-1.61a1 1 0 0 0 0-1.42l-.58-.58a1 1 0 0 0-1.42 0l-1.06 1.06c-.1.1-.27.1-.36-.02L7.45 2.53Z" class=""></path></svg>`
-          )
-        ])
-          .class("flex gap-2 font-bold outline-2 p-1 pl-4 pr-4 -mt-1 mb-3 text-center justify-center items-center")
-          .class("rounded-xl transition duration-200 select-none")
-          .class("outline-zinc-600 bg-zinc-700/50 hover:bg-zinc-600/50"),
-      ]).class("col-span-2 flex gap-4"),
-      new Paragraph("Online").class("text-green-400 col-span-2"),
-      // new Paragraph("Offline").class("text-zinc-500 col-span-2"),
+      ...interactButtons,
+      onlineStatus,
       new Paragraph("Member since:"),
-      new Paragraph(`${new Date().toLocaleDateString()}`)
-        .class("text-right font-bold self-end"),
+      new Paragraph(registeredSince).class("text-right font-bold self-end"),
       new Paragraph("Games played:"),
-      new Paragraph(`${this.gameStats.wins + this.gameStats.losses + this.gameStats.draws}`)
+      (this.stats ?
+        new Paragraph(`${this.stats.lifetime.wins
+          + this.stats.lifetime.losses
+          + this.stats.lifetime.draws}`)
+        : new Paragraph("..."))
         .class("text-right font-bold self-end"),
       new Paragraph("Rank:"),
-      new Paragraph("Player").class("text-right font-bold self-end"),
+      new Paragraph("Gamer").class("text-right font-bold self-end"),
       // new Div(),
     ])
       .class("grid grid-cols-2")
-      .withId("tile-user-info");
+      .withId("tile-user-info") as Div;
   }
 
-  friendsTile(): AElement {
+  friendsTile(): Div {
     const friendCard = (info: UserInfo, index: number): AElement => {
       const elems = [
-        new Div().class("aspect-square w-8 bg-cyan-200 rounded-full"),
+        new Div(
+          info.avatarUrl
+            ? [new Image(info.avatarUrl)]
+            : []
+        ).class("w-8 bg-cyan-200")
+          .class(AVATAR_DIV),
         new Div().class("h-3 w-3 rounded-full -ml-6.75 mt-4.5 outline-2 outline-neutral-900"),
         new Paragraph(info.username).class("self-center font-bold"),
       ]
-      if (info.isOnline) {
+      if (info.lastSeen && Date.parse(info.lastSeen) + 4 * 60_000 > Date.now()) {
         elems[1].class("bg-green-400");
       } else {
         elems[1].class("bg-neutral-400");
       }
       const res = new Div(elems)
         .class("transition duration-150 ease-in-out flex flex-row gap-4 hover:bg-zinc-800 rounded-xl")
-        .withId(`friend-${index}`);
-      (res as any).username = info.username;
+        .withId(`friend-${index}`)
+        .withOnclick(() => this.router.navigate(`/dashboard?user=${info.username}`));
       return res;
     };
 
     let flist: AElement[];
-    if (this.friends.length) {
-      this.friendCards = this.friends.slice(0, 5).map(friendCard);
-      flist = this.friendCards.slice();
+    if (this.friends?.length) {
+      flist = this.friends.slice(0, 5).map(friendCard);
+    } else if (this.friends === undefined) {
+      flist = [];
+      for (let i = 0; i < 5; i++) {
+        flist.push((() => {
+          const elems = [
+            new Div().class("aspect-square w-8 bg-neutral-800/50 rounded-full"),
+            new Div().class("h-3 w-3 rounded-full -ml-6.75 mt-4.5 outline-2 outline-neutral-900"),
+            new Paragraph("•••").class("self-center font-bold text-neutral-700"),
+          ];
+          elems[1].class("bg-neutral-400/10");
+          const res = new Div(elems)
+            .class("transition duration-150 ease-in-out flex flex-row gap-4 hover:bg-zinc-800 rounded-xl");
+          return res;
+        })());
+      };
     } else {
-      this.friendCards = undefined;
       flist = [new Paragraph("No frens found :(").class(MUTED_TEXT)];
     }
 
-    this.friendsTitle = new Div([new Paragraph("Friends →"), new Paragraph(`${this.userInfo?.nFriends ?? "..."}`)])
+    const friendsTitle = new Div([new Paragraph("Friends →"), new Paragraph(`${this.friends?.length ?? "..."}`)])
       .class("flex justify-between font-bold text-xl mb-2")
-      .withId("friends-list-title");
+      .withId("friends-list-title")
+      .withOnclick(() => this.router.navigate("/friends" + location.search));
 
     return new Div([
-      this.friendsTitle,
+      friendsTitle,
       ...flist,
     ]).class("flex flex-col gap-2 select-none")
-      .withId("tile-friends");
+      .withId("tile-friends") as Div;
   }
 
-  matchHistoryTile(): AElement {
-    const bigCard = new GameCardLarge(this.lastGames[0]);
-    bigCard.class("h-30").withId('card-0-large');
-    this.cards = [bigCard];
-    for (let i = 1; i < Math.min(5, this.lastGames.length); i++) {
-      const c = new GameCardLarge(this.lastGames[i]);
-      c.class("h-30").withId(`card-${i}`)
-        .withOnclick(() => this.router.navigate(`/game?id=${this.lastGames[i].id}`));
-      this.cards.push(c);
+  matchHistoryTile(): Div {
+    const cards = [];
+    if (!this.recentGames) {
+      for (let i = 0; i < 5; i++) {
+        cards.push(new GameCardLarge(undefined));
+      };
+    } else if (this.recentGames.length) {
+      cards.push(new GameCardLarge(null));
+    } else {
+      for (let i = 0; i < Math.min(5, this.recentGames.length); i++) {
+        const gg = this.recentGames[i];
+        cards.push(
+          new GameCardLarge(gg)
+            .withOnclick(() => this.router.navigate(`/games?id=${gg.id}`))
+            .withId(`game-card-${i}`)
+        );
+      }
     }
-    this.historyTitle = new Paragraph("Match history&nbsp;→")
+    for (const c of cards) {
+      c.class("h-26");
+    }
+
+    const navGameHistory = () => {
+      this.router.navigate("/game-history" + location.search);
+    };
+    const historyTitle = new Paragraph("Match history&nbsp;→")
       .class("select-none")
-      .withOnclick(() => this.router.navigate("/game-history"))
+      .withOnclick(navGameHistory)
       .withId("match-history") as Paragraph;
+    const seeAll = new GameCardBase(null)
+      .class("justify-center hover:bg-zinc-600/50 h-10")
+      .withId("see-all-btn")
+      .withOnclick(navGameHistory);
+
+    (seeAll as Div).contents
+      = [new Paragraph("See all").class("self-center font-bold")];
+
+    let stats = new Div([
+      new Paragraph(`Wins: <span class="text-white">${this.stats?.lifetime.wins ?? ".."}</span>`),
+      new Paragraph(`Draws: <span class="text-white">${this.stats?.lifetime.losses ?? ".."}</span>`),
+      new Paragraph(`Losses: <span class="text-white">${this.stats?.lifetime.draws ?? ".."}</span>`),
+    ]);
     return new Div([
       new Div([
-        this.historyTitle,
-        new Div([
-          new Paragraph(`Wins ${this.gameStats.wins}`),
-          new Paragraph(`Draws ${this.gameStats.draws}`),
-          new Paragraph(`Losses ${this.gameStats.losses}`),
-        ]).class("hidden md:flex flex-row justify-end gap-4"),
+        historyTitle,
+        stats.class("hidden md:flex flex-row justify-end gap-4 text-neutral-500"),
       ]).class("flex flex-row gap-4 justify-between font-bold text-xl mb-2"),
-      ...this.cards,
-      this.seeAll
+      ...cards,
+      seeAll
     ]).class("flex flex-col gap-2 md:gap-4")
-      .withId("tile-match-history");
+      .withId("tile-match-history") as Div;
   }
 
   bindEvents() {
-    const navGameHist = () => this.router.navigate('game-history');
-    this.historyTitle?.byId()?.addEventListener('click', navGameHist);
-    this.seeAll.byId()?.addEventListener('click', navGameHist);
+    if (!APP.userInfo) {
+      this.router.navigate("/login");
+    }
 
-    this.cards.forEach((c) => {
-      if (c.data) {
-        c.byId()?.addEventListener('click', () => {
-          if (c.data) {
-            this.router.navigate(`game-summary?id=${c.data.id}`);
-          }
-        });
+    this.tiles?.forEach((tile) => tile.bindEvents());
+
+    let path = "/user";
+    if (this.username !== APP.userInfo?.username) {
+      path = `/users/${this.username}`;
+    }
+
+    const thenJson =
+      (x: Promise<Response>) => x.then(async r => await r.json()).catch();
+
+    Promise.all([
+      API.fetch(path),
+      thenJson(API.fetch(`${path}/friends`)),
+      thenJson(API.fetch(`${path}/stats`))
+    ]).then(async ([resp, friends, stats]) => {
+      if (resp.status === 401) {
+        APP.onLogout();
+        this.router.navigate("/login");
+        return;
       }
-    });
+      if (!resp.ok || resp.status !== 304 || !friends || !stats) {
+        this.router.navigate(404, false);
+        return;
+      }
 
-    this.friendsTitle?.byId()?.addEventListener('click', () => {
-      this.router.navigate(`friends?user=${this.username}`);
-    });
-    this.friendCards?.forEach((c) => {
-      c.byId()?.addEventListener('click', () => {
-        this.router.navigate(`dashboard?user=${(c as any).username}`);
-      });
-    });
+      this.userInfo = await resp.json() as
+        ApiPaths["/users/{username}"]["get"]["responses"]["200"]["content"]["application/json"];
+      this.friends = friends as
+        ApiPaths["/users/{username}/friends"]["get"]["responses"]["200"]["content"]["application/json"];
+      this.stats = stats as
+        ApiPaths["/users/{username}/stats"]["get"]["responses"]["200"]["content"]["application/json"];
+
+      this.userInfoTile().redrawInner();
+      this.friendsTile().redrawInner();
+
+      const ids = new Set(this.stats.recentMatches
+        .flatMap(x => x.players)
+        .map(x => x.id));
+      let proms = [];
+      const userInfos: Map<number | string, UserInfo> = new Map();
+      for (const id of ids) {
+        proms.push(userFromMaybeId(id).then(info => userInfos.set(id, info)));
+      }
+      await Promise.all(proms);
+
+      this.recentGames = this.stats.recentMatches.map(g => {
+        (g as GameResultExt).playerInfos
+          = g.players.map(p => userInfos.get(p.id)) as UserInfo[];
+        (g as GameResultExt).thisUser = this.userInfo?.id;
+        return g as GameResultExt;
+      })
+
+      this.matchHistoryTile().redrawInner();
+    }).catch(console.error);
+  }
+
+  interactButtons(): AElement[] {
+    // TODO(Vaiva)
+    const styles = "flex gap-2 font-bold p-1 pl-4 pr-4 -mt-1 mb-3";
+
+    let buttons: AElement[] = [];
+
+    switch (this.friendState) {
+      case null:
+      case "incoming":
+        buttons = [
+          new Div([
+            new Inline(ICON_ADD_FRIEND).class("self-center"),
+            new Paragraph("Add friend").class("self-center"),
+          ]).class("grow")
+            .class(HOW_TO_CENTER_A_DIV)
+            .class(styles)
+            .class(DEFAULT_BUTTON)
+            .withOnclick(() => { /* TODO */ })
+            .withId("add-friend-btn"),
+          new Div([
+            new Inline(ICON_CROSSED_SWORDS).class("self-center"),
+          ])
+            .class(HOW_TO_CENTER_A_DIV)
+            .class(styles)
+            .class(DEFAULT_BUTTON)
+            .withOnclick(() => { /* TODO */ })
+            .withId("invite-to-play-btn")
+        ];
+        break;
+      case "self":
+        buttons = [
+          new Div([
+            // TODO(Vaiva): setting button icon?
+            new Paragraph("Edit profile").class("self-center"),
+          ]).class("grow")
+            .class(HOW_TO_CENTER_A_DIV)
+            .class(styles)
+            .class(DEFAULT_BUTTON)
+            .withOnclick(() => this.router.navigate("/settings"))
+            .withId("edit-profile-btn"),
+        ];
+        break;
+      case "outgoing":
+        buttons = [
+          new Div([
+            new Inline(ICON_FRIEND_ADDED).class("self-center"),
+            new Paragraph("Request sent").class("self-center"),
+          ]).class("grow")
+            .class(HOW_TO_CENTER_A_DIV)
+            .class(styles)
+            .class(DEFAULT_BUTTON)
+            .withOnclick(() => { /* TODO */ })
+            .withId("cancel-friend-req-btn"),
+          new Div([
+            new Inline(ICON_CROSSED_SWORDS).class("self-center"),
+          ])
+            .class(HOW_TO_CENTER_A_DIV)
+            .class(styles)
+            .class(DEFAULT_BUTTON)
+            .withOnclick(() => { /* TODO */ })
+            .withId("invite-to-play-btn")
+        ];
+        break;
+      case "friend":
+        buttons = [
+          new Div([
+            new Inline(ICON_CROSSED_SWORDS).class("self-center"),
+            new Paragraph("Invite to play").class("self-center"),
+          ]).class("grow")
+            .class(HOW_TO_CENTER_A_DIV)
+            .class(styles)
+            .class(DEFAULT_BUTTON)
+            .withOnclick(() => { /* TODO */ })
+            .withId("invite-to-play-btn"),
+          new Div([
+            new Inline(ICON_FRIEND_ADDED).class("self-center"),
+          ])
+            .class(HOW_TO_CENTER_A_DIV)
+            .class(styles)
+            .class(DEFAULT_BUTTON)
+            .withOnclick(() => { /* TODO */ })
+            .withId("remove-friend-btn"),
+        ];
+        break;
+    }
+
+    return [new Div(buttons).class("col-span-2 flex gap-4")];
   }
 
   transitionIn(): null | void {
@@ -460,7 +389,7 @@ export default class DashboardPage extends Page {
 
     this.tiles?.forEach((t, i) => t.byId()?.classList.add(
       "transition", "ease-in-out", "duration-900",
-      `delay-${i * 50 + 25}`,
+      `delay-${i * 50 + 150}`,
       ...TILE_ANIM_KEY1
     ));
 

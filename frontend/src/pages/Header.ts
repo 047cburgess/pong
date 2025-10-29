@@ -1,5 +1,6 @@
-import { UserInfo } from "../App";
+import { SelfInfo } from "../Api";
 import Router, { Page } from "../Router";
+import { HOW_TO_CENTER_A_DIV } from "./elements/CssUtils";
 import { AElement, Div, Image, Paragraph } from "./elements/Elements";
 
 const makeButton = (text: string, id: string, link: string): { elem: AElement, link: string } => {
@@ -10,32 +11,39 @@ const makeButton = (text: string, id: string, link: string): { elem: AElement, l
   };
 };
 
-
 export default class PageHeader extends Page {
   title = new Paragraph("libft_transcendence")
-    .class("self-center text-2xl").withId("header-title");
-  buttons: { elem: AElement, link: string }[] = [
-    makeButton("Register", "header-nav-register", "register"),
-    makeButton("Log in", "header-nav-login", "login"),
-    makeButton("Play", "header-nav-play", "play"),
-    makeButton("Friends", "header-nav-friends", "friends"),
-    makeButton("Vaiva", "header-nav-self", "dashboard"),
-    {
-      elem: new Div().class("aspect-square bg-pink-200 h-10 rounded-full self-center overflow-hidden")
-        .withId("header-nav-self-img"), link: "dashboard"
-    },
-  ];
-
-  userInfo: UserInfo | null;
+    .class("self-center text-2xl")
+    .withOnclick(() => this.router.navigate(""))
+    .withId("header-title");
+  buttons: { elem: AElement, link: string }[];
+  userInfo: SelfInfo | null;
   navButtons: AElement[];
 
-  constructor(router: Router, userInfo: UserInfo | null) {
+  constructor(router: Router, userInfo: SelfInfo | null) {
     super(router);
     this.userInfo = userInfo;
+    this.buttons = [
+      makeButton("Register", "header-nav-register", "register"),
+      makeButton("Log in", "header-nav-login", "login"),
+      makeButton("Play", "header-nav-play", "play"),
+      makeButton("Friends", "header-nav-friends", "friends"),
+      makeButton(userInfo?.username ?? "", "header-nav-self", "dashboard"),
+      {
+        elem: new Div(
+          this.userInfo?.avatarUrl
+            ? [new Image(this.userInfo.avatarUrl)]
+            : []
+        ).class("aspect-square bg-zinc-700/25 h-10 rounded-full self-center overflow-hidden flex")
+          .class(HOW_TO_CENTER_A_DIV)
+          .withId("header-nav-self-img"),
+        link: "dashboard"
+      },
+    ];
 
-    if (userInfo?.avatar) {
+    if (userInfo?.avatarUrl) {
       (this.buttons[this.buttons.length - 1].elem as Div)
-        .contents = [new Image(userInfo?.avatar)];
+        .contents = [new Image(userInfo.avatarUrl)];
     }
 
     if (this.userInfo) {
@@ -57,9 +65,7 @@ export default class PageHeader extends Page {
   }
 
   bindEvents() {
-    this.title.byId()?.addEventListener('click', () => {
-      this.router.navigate("");
-    });
+    this.title.bindEvents();
     this.buttons.forEach((e) => {
       e.elem.byId()?.addEventListener('click', () => {
         this.router.navigate(e.link);

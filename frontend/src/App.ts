@@ -1,4 +1,4 @@
-import Router from "./Router";
+import Router, { Page } from "./Router";
 
 import WelcomePage from "./pages/Welcome";
 import LoginPage from "./pages/Login";
@@ -7,24 +7,34 @@ import NotFoundPage from "./pages/NotFound";
 
 import './styles.css';
 import PageHeader from "./pages/Header";
-import { API } from "./Api";
+import { API, SelfInfo } from "./Api";
+import FriendsPage from "./pages/Friends";
+import MatchHistoryPage from "./pages/MatchHistory";
+import { AElement } from "./pages/elements/Elements";
 
-export type UserInfo = {
-  username: string,
-  realname?: string,
-  registered: string,
-  avatar?: string,
-};
+class RedirToLogin extends Page {
+  constructor(router: Router) {
+    super(router);
+  }
+
+  content(): AElement[] {
+    return [];
+  }
+
+  bindEvents() {
+    this.router.navigate("/login");
+  }
+}
 
 class App {
-  readonly router;
+  readonly router: Router;
 
   header: PageHeader;
-  headerRoot: HTMLElement;
+  readonly headerRoot: HTMLElement;
   evtSource: EventSource;
-  userInfo: UserInfo | null;
+  userInfo: SelfInfo | null;
 
-  constructor(userInfo: UserInfo | null) {
+  constructor(userInfo: SelfInfo | null) {
     this.evtSource = new EventSource("/api/events");
     this.evtSource.onmessage = (_e) => {
       // TODO(Vaiva): Notifications
@@ -40,12 +50,15 @@ class App {
     this.header.bindEvents();
 
     this.router.addError(404, NotFoundPage);
+    this.router.addError(401, RedirToLogin);
 
     this.router.addRoute("", WelcomePage);
     this.router.addRoute("login", LoginPage);
     this.router.addRoute("dashboard", DashboardPage);
+    this.router.addRoute("friends", FriendsPage);
+    this.router.addRoute("game-history", MatchHistoryPage);
 
-    this.router.navigate(window.location.pathname, false);
+    this.router.navigate(location.pathname + location.search, false);
   }
 
   private reloadHeader() {
@@ -55,7 +68,7 @@ class App {
     this.header.bindEvents();
   }
 
-  onLogin(userInfo: UserInfo) {
+  onLogin(userInfo: SelfInfo) {
     this.userInfo = userInfo;
     this.reloadHeader();
   }
@@ -66,12 +79,14 @@ class App {
   }
 }
 
-// TODO(Vaiva): auth check
-const resp = await API.fetch("/me");
-// const info = resp.status === 200 ? resp.json() : null;
-const info = {
+const resp = await API.fetch("/user");
+let info: SelfInfo | null = (resp.ok || resp.status === 304)
+  ? null
+  : null;
+info = {
+  id: 0,
   username: "Vaiva",
-  registered: new Date().toLocaleDateString(),
+  email: "test@example.com",
 };
 
 export const APP = new App(info);
