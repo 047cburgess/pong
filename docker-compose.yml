@@ -1,0 +1,24 @@
+services:
+  matchmaking-service:
+    build: ./backend/matchmaking_service
+    command: npm run dev
+    volumes:
+      - ./backend/matchmaking_service:/app
+      - /app/node_modules
+      - ./backend/matchmaking_service/data:/app/data
+    ports:
+      - "3000:3000"
+    networks:
+      - transcendence
+    environment:
+      - PORT=${MATCHMAKING_PORT}
+      - NODE_ENV=${NODE_ENV}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - DB_VERBOSE=${DB_VERBOSE}
+      - DATABASE_PATH=${MATCHMAKING_DATABASE_PATH}
+      - GAME_SERVICE_URL=${GAME_SERVICE_URL}
+      - SERVICE_URL=${MATCHMAKING_SERVICE_URL}
+
+networks:
+  transcendence:
+    driver: bridge

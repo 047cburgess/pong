@@ -1,0 +1,151 @@
+export type UserId = number;
+export type GameMode = "classic" | "tournament";
+export type TournamentId = string | null;
+export type GameId = string;
+export type GameStatus = "waiting" | "ready" | "started"; // tbc on started if need
+
+
+export interface Player {
+	id: UserId;
+	score: number;
+}
+
+// GAME TYPES 
+export interface GameKey {
+	key: string;
+	gameId: GameId;
+	expires: Date;
+}
+
+// openAPI
+export interface GameResultAPI {
+	id: GameId;
+	players: Player[];
+	winnerId?: UserId;
+	tournamentId?: TournamentId;
+	date: Date;
+	duration: string;
+}
+
+export interface TournamentResultAPI {
+  id: TournamentId;
+  date: Date;
+  participants: {
+    id: UserId;
+  }[];
+  games: {
+    semifinal1: GameResultAPI;
+    semifinal2: GameResultAPI;
+    final: GameResultAPI;
+  };
+}
+
+export interface PlayerStatsAPI {
+  wins: number;
+  draws: number;
+  losses: number;
+}
+
+export interface DailyPlayerStatsAPI {
+  day: string;
+  wins: number;
+  draws: number;
+  losses: number;
+}
+
+// combined stats response matching TypeSpec
+export interface GameStatsAPI {
+  lifetime: PlayerStatsAPI;
+  daily: DailyPlayerStatsAPI[];
+  recentMatches: GameResultAPI[];
+  recentTournaments: TournamentResultAPI[];
+}	
+
+// for database
+export interface GameResultDB {
+	id: GameId;
+	mode: GameMode;
+	//is_local: boolean;
+	tournamentId?: string;
+	winnerId?: string;
+	date: Date;
+	duration: string;
+
+}
+
+export interface GameParticipationDB {
+	userId: UserId;
+	score: number;
+	result: 'win' | 'loss' | 'draw'
+}
+
+export interface TournamentResultDB {
+	id: TournamentId;
+	semi1Id: GameId;
+	semi2Id: GameId;
+	finalId: GameId;
+	winnerId: UserId;
+	date: Date;
+}
+
+export interface TournamentParticipationDB {
+	tournamentId: TournamentId;
+	userId: UserId;
+}
+
+
+// webhook receive
+export interface GameResultWebhook {
+	id: GameId;
+	mode: GameMode;
+	players: Player[]; //id + score
+	winnerId?: string;
+	date: Date;
+	duration: string;
+}
+
+export interface LocalGameSubmission {
+	gameId: GameId;
+	players: Player[];
+	winnerId?: UserId;
+	date: Date;
+	duration: string;
+}
+
+// SSE EVENT TYPES - outgoing
+export interface GameInviteEvent {
+	id?: string;
+	event: "GameInvite";
+	gameId: GameId;
+	from: UserId;
+}
+
+export interface TournamentInviteEvent {
+	id?: string;
+	event: "TournamentInvite";
+	tournamentId: TournamentId;
+	from: UserId;
+}
+
+
+
+export interface CustomGame {
+	gameId: GameId;
+	hostId: UserId;
+	capacity: number;
+	invitedPlayers: UserId[];
+	acceptedPlayers?:UserId[];
+	keys: GameKey[]; // same number as max players/capacity
+	status: GameStatus;
+	createdAt: Date;
+}
+
+// INTERNAL API TYPES
+export interface NewGameRequest {
+	nPlayers: number;
+	gameMode: GameMode;
+}
+
+export interface NewGameResponse {
+	keys: GameKey[];
+}
