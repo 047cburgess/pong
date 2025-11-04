@@ -1,4 +1,4 @@
-NAME = transcendence SERVICES = matchmaking
+NAME = transcendence
 
 DOCKER_COMPOSE = docker compose
 ENV_TEMPLATE = .env.example
@@ -67,5 +67,5 @@ help:
 	@echo "  $(GREEN)help$(NC)    - Show this help message"
 	@echo ""
 
-.PHONE: all up down build fclean re logs ps help stop
+.PHONY: all up down build fclean re logs ps help stop
 
