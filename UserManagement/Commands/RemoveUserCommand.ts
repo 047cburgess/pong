@@ -1,9 +1,8 @@
-import { FriendManager } from "../Friend/FriendManager";
-import { MessagesQueueManager } from "../MesssageQueue/MessagesQueueManager";
-import { user_id } from "../UserData/User";
-import { UserManager } from "../UserData/UserManager";
+import { FriendManager } from "../Managers/FriendManager";
+import { MessagesQueueManager } from "../Managers/MessagesQueueManager";
+import { UserManager, user_id } from "../Managers/UserManager";
 import { CancelFriendRequestCommand } from "./CancelFriendRequestCommand";
-import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
+import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 import { RefuseFriendRequestCommand } from "./RefuseFriendRequestCommand";
 import { RemoveFriendCommand } from "./RemoveFriendCommand";
 
@@ -17,7 +16,6 @@ export class RemoveUserCommand extends CommandBase {
 
 
 	execute(user_id: user_id): CommandResult {
-		console.log('[COMMAND] RemoveUserCommand START'); //debug
 		const userNode = this.friendManager.getUserNode(user_id);
 		if (userNode) {
 			for (const id of userNode!.friends)
@@ -32,9 +30,6 @@ export class RemoveUserCommand extends CommandBase {
 		this.friendManager.removeUser(user_id);
 		this.messageManager.clear(user_id);
 
-		this.friendManager.printFullState();//debug
-		this.userManager.printUserManager();//debug
-		console.log('[COMMAND] RemoveUserCommand END'); //debug
 		return { success: true, errors: [] };
 	}
 }

@@ -1,8 +1,7 @@
-import { FriendManager, FriendRequest, FriendRequestStatus } from "../Friend/FriendManager";
-import { MessagesQueueManager, MessagesTypes } from "../MesssageQueue/MessagesQueueManager";
-import { user_id } from "../UserData/User";
-import { UserManager } from "../UserData/UserManager";
-import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
+import { FriendManager, FriendRequest, FriendRequestStatus } from "../Managers/FriendManager";
+import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
+import { UserManager, user_id } from "../Managers/UserManager";
+import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 import { AcceptFriendRequestCommand } from "./AcceptFriendRequestCommand";
 
 export enum FriendRequestError {
@@ -24,7 +23,6 @@ export class RequestFriendCommand extends CommandBase {
 	) { super() }
 
 	execute(sender_id: user_id, receiver_id: user_id): CommandResult {
-		console.log('[COMMAND] RequestFriend START'); //debug
 		const sender = this.userManager.getOrLoadUserByID(sender_id);
 		const senderNode = this.friendManager.getUserNode(sender_id);
 
@@ -52,9 +50,6 @@ export class RequestFriendCommand extends CommandBase {
 			this.messageManager.push(receiver_id, { type: MessagesTypes.FRIENDREQUEST_RECEIVED, data: { from: sender.name } })
 		}
 
-		this.friendManager.printFullState();//debug
-		this.userManager.printUserManager();//debug
-		console.log('[COMMAND] RequestFriend END'); //debug
 		return { success: true, errors: [] };
 	}
 

@@ -1,8 +1,7 @@
-import { FriendManager, FriendRequestStatus } from "../Friend/FriendManager";
-import { MessagesQueueManager, MessagesTypes } from "../MesssageQueue/MessagesQueueManager";
-import { user_id } from "../UserData/User";
-import { UserManager } from "../UserData/UserManager";
-import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
+import { FriendManager, FriendRequestStatus } from "../Managers/FriendManager";
+import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
+import { UserManager, user_id } from "../Managers/UserManager";
+import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 import { FriendRequestError } from "./RequestFriendCommand";
 
 @CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
@@ -33,9 +32,6 @@ export class CancelFriendRequestCommand extends CommandBase {
 			status: FriendRequestStatus.REFUSED
 		});
 
-				this.friendManager.printFullState();//debug
-		this.userManager.printUserManager();//debug
-		console.log('[COMMAND] CancelRequest END'); //debug
 		return { success: true, errors: [] };
 	}
 }

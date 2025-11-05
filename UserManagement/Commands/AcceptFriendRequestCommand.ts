@@ -1,8 +1,7 @@
-import { FriendManager, FriendRequestStatus } from "../Friend/FriendManager";
-import { MessagesQueueManager, MessagesTypes } from "../MesssageQueue/MessagesQueueManager";
-import { user_id } from "../UserData/User";
-import { UserManager } from "../UserData/UserManager";
-import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
+import { FriendManager, FriendRequestStatus } from "../Managers/FriendManager";
+import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
+import { UserManager, user_id } from "../Managers/UserManager";
+import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 import { FriendRequestError } from "./RequestFriendCommand";
 
 @CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
@@ -40,9 +39,6 @@ export class AcceptFriendRequestCommand extends CommandBase {
 			senderNode.friends.add(receiver_id);
 		}
 
-		this.friendManager.printFullState();//debug
-		this.userManager.printUserManager();//debug
-		console.log('[COMMAND] AcceptRequest END'); //debug
 		return { success: true, errors: [] };
 	}
 }

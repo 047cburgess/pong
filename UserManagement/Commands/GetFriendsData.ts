@@ -1,7 +1,6 @@
-import { FriendManager } from "../Friend/FriendManager";
-import { PublicUserData, user_id } from "../UserData/User";
-import { UserManager } from "../UserData/UserManager";
-import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
+import { FriendManager } from "../Managers/FriendManager";
+import { UserManager,PublicUserData, user_id } from "../Managers/UserManager";
+import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 
 @CommandManager.register(FriendManager, UserManager)
 export class GetFriendsData extends CommandBase {
@@ -16,9 +15,6 @@ export class GetFriendsData extends CommandBase {
 		const ids_list = this.friendManager.getFriendList(user_id);
 		result.data = this.userManager.getPublicBatchByIDs(ids_list);
 		result.success = true;
-				this.friendManager.printFullState();//debug
-		this.userManager.printUserManager();//debug
-		console.log('[COMMAND] GetFriends END'); //debug
 		return result;
 	}
 

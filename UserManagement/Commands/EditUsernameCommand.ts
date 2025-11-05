@@ -1,10 +1,8 @@
-import { user_id, UserData } from "../UserData/User";
-import { UserManager } from "../UserData/UserManager";
-import { CommandBase, CommandManager } from "./CommandManager";
-import { CommandResult } from "./CommandManager";
-import { OnUserSeenCommand } from "./OnUserSeenCommand";
-import { FriendManager } from "../Friend/FriendManager";
-import { MessagesQueueManager, MessagesTypes } from "../MesssageQueue/MessagesQueueManager";
+import { UserManager, user_id } from "../Managers/UserManager";
+import { CommandBase, CommandManager } from "../Managers/CommandManager";
+import { CommandResult } from "../Managers/CommandManager";
+import { FriendManager } from "../Managers/FriendManager";
+import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
 
 export interface UserValidationResult {
 	success: boolean;
@@ -36,6 +34,8 @@ export class EditUsernameCommand extends CommandBase {
 	private validateUsername(username: string): UserValidationResult {
 		const result: UserValidationResult = { success: false, errors: [] };
 
+		if (username === "default")
+			result.errors.push(UsernameErrors.ALREADY_TAKEN);
 		if (!username || username.length < this.USERNAME_MIN_LEN)
 			result.errors.push(UsernameErrors.TOO_SHORT);
 		if (username.length > this.USERNAME_MAX_LEN)
@@ -77,9 +77,6 @@ export class EditUsernameCommand extends CommandBase {
 			return { success: false, errors: [UsernameErrors.DOES_NOT_EXIST] };
 
 		this.notifyFriends(user_id, previousname, username);
-		this.friendManager.printFullState();//debug
-		this.userManager.printUserManager();//debug
-		console.log('[COMMAND] ChangeUsername END'); //debug
 		return { success: true, errors: [] };
 	}
 }

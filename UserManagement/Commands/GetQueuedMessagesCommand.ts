@@ -1,7 +1,6 @@
-import { Messages, MessagesQueueManager } from "../MesssageQueue/MessagesQueueManager";
-import { user_id } from "../UserData/User";
-import { UserManager } from "../UserData/UserManager";
-import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
+import { Messages, MessagesQueueManager } from "../Managers/MessagesQueueManager";
+import { user_id } from "../Managers/UserManager";
+import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 
 @CommandManager.register(MessagesQueueManager)
 export class GetQueuedMessagesCommand extends CommandBase {
@@ -12,7 +11,6 @@ export class GetQueuedMessagesCommand extends CommandBase {
 	execute(user_id: user_id): CommandResult<Messages[]> {
 		
 		const msg = this.messagesManager.fetch(user_id);
-		console.log('[COMMAND] GetQueuedMessage END'); //debug
 		return ({ success: true, errors: [], data: msg });
 	}
 }

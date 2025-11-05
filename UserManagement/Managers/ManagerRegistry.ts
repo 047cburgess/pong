@@ -1,4 +1,4 @@
-import { ManagerBase } from "./Commands/CommandManager";
+import { ManagerBase } from "./CommandManager";
 
 type AnyManagerConstructor = abstract new (...args: any[]) => ManagerBase;
 

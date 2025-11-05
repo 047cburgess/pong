@@ -1,10 +1,10 @@
-import { ManagerRegistry } from "../ManagerRegistry";
+import { ManagerRegistry } from "./ManagerRegistry";
 import "reflect-metadata";
 
-export interface CommandResult<T = void>{
-	success : boolean;
-	errors : string[];
-	data? : T;
+export interface CommandResult<T = void> {
+	success: boolean;
+	errors: string[];
+	data?: T;
 }
 
 export abstract class CommandBase {
@@ -13,8 +13,8 @@ export abstract class CommandBase {
 }
 
 export abstract class ManagerBase {
-	constructor() {}
-	abstract saveAll() : any;
+	constructor() { }
+	abstract saveAll(): any;
 }
 type AnyManagerConstructor = abstract new (...args: any[]) => ManagerBase;
 
@@ -38,21 +38,19 @@ export class CommandManager {
 	}
 
 	private registerCommands() {
-			for (const { Command, deps } of CommandManager.registeredCommands) {
-		// Vérification du constructeur
-		const paramTypes = Reflect.getMetadata("design:paramtypes", Command) as any[] || [];
-		if (paramTypes.length !== deps.length) {
-			throw new Error(
-				`Command ${Command.name} constructor expects ${paramTypes.length} manager(s), ` +
-				`but ${deps.length} provided in registration`
-			);
-		}
+		for (const { Command, deps } of CommandManager.registeredCommands) {
+			const paramTypes = Reflect.getMetadata("design:paramtypes", Command) as any[] || [];
+			if (paramTypes.length !== deps.length) {
+				throw new Error(
+					`Command ${Command.name} constructor expects ${paramTypes.length} manager(s), ` +
+					`but ${deps.length} provided in registration`
+				);
+			}
 
-		// Création de l'instance
-		const instances = deps.map(dep => this.managerRegistry.get(dep)) as InstanceType<AnyManagerConstructor>[];
-		const command = new (Command as CommandCtorAcceptingManagers)(...instances);
-		CommandManager.commands.set(Command, command);
-	}
+			const instances = deps.map(dep => this.managerRegistry.get(dep)) as InstanceType<AnyManagerConstructor>[];
+			const command = new (Command as CommandCtorAcceptingManagers)(...instances);
+			CommandManager.commands.set(Command, command);
+		}
 	}
 
 	static register = (...deps: AnyManagerConstructor[]) => {

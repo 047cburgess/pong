@@ -1,9 +1,7 @@
-import { FriendManager } from "../Friend/FriendManager";
-import { MessagesQueueManager, MessagesTypes } from "../MesssageQueue/MessagesQueueManager";
-import { user_id } from "../UserData/User";
-import { UserManager } from "../UserData/UserManager";
-import { UserStatus } from "../UserData/UserStatus";
-import { CommandBase, CommandManager } from "./CommandManager";
+import { FriendManager } from "../Managers/FriendManager";
+import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
+import { user_id, UserManager, UserStatus } from "../Managers/UserManager";
+import { CommandBase, CommandManager } from "../Managers/CommandManager";
 
 @CommandManager.register(FriendManager, UserManager, MessagesQueueManager)
 export class OnUserSeenCommand extends CommandBase {
@@ -14,7 +12,6 @@ export class OnUserSeenCommand extends CommandBase {
 
 	execute(userId: user_id) {
 		
-		console.log(`[SERVER] OnUserSeenCommand START ${userId}`); //debug
 		const previousStatus = this.userManager.getUserByID(userId)?.status || UserStatus.OFFLINE;
 		const user = this.userManager.onUserSeen(userId);
 		this.friendManager.loadUser(userId);
@@ -27,9 +24,6 @@ export class OnUserSeenCommand extends CommandBase {
 				}
 			}
 		}
-		this.friendManager.printFullState();//debug
-		this.userManager.printUserManager();//debug
-		console.log('[SERVER] OnUserSeenCommand END'); //debug
 	}
 }
 

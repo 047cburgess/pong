@@ -1,8 +1,7 @@
-import { FriendManager, FriendRequestStatus } from "../Friend/FriendManager";
-import { MessagesQueueManager, MessagesTypes } from "../MesssageQueue/MessagesQueueManager";
-import { user_id } from "../UserData/User";
-import { UserManager } from "../UserData/UserManager";
-import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
+import { FriendManager, FriendRequestStatus } from "../Managers/FriendManager";
+import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
+import { user_id, UserManager } from "../Managers/UserManager";
+import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 import { FriendRequestError } from "./RequestFriendCommand";
 
 @CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
@@ -14,7 +13,6 @@ export class RefuseFriendRequestCommand extends CommandBase {
 	) { super() }
 
 	execute(receiver_id: user_id, sender_id: user_id): CommandResult {
-		console.log('[COMMAND] RefuseFreindRequestCommand START'); //debug
 		const receiver = this.userManager.getOrLoadUserByID(receiver_id); //could be only get user since it should be loaded through onuserseen prehandler
 		const receiverNode = this.friendManager.getUserNode(receiver_id);
 
@@ -33,9 +31,7 @@ export class RefuseFriendRequestCommand extends CommandBase {
 			receiver_id: receiver_id,
 			status: FriendRequestStatus.REFUSED
 		});
-		this.friendManager.printFullState();//debug
-		this.userManager.printUserManager();//debug
-		console.log('[COMMAND] RefuseFreindRequestCommand END'); //debug
+
 		return { success: true, errors: [] };
 	}
 }

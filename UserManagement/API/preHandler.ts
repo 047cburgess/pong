@@ -1,5 +1,5 @@
 import Fastify, { FastifyReply, FastifyRequest, HookHandlerDoneFunction } from "fastify"
-import { CommandManager } from "../Commands/CommandManager";
+import { CommandManager } from "../Managers/CommandManager";
 import { GetUserIdCommand } from "../Commands/GetUserIdCommand";
 import { OnUserSeenCommand } from "../Commands/OnUserSeenCommand";
 

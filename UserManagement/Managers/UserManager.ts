@@ -1,16 +1,37 @@
-import { ManagerBase } from "../Commands/CommandManager";
+import { ManagerBase } from "./CommandManager";
 import { DbManager } from "../MOCKS/MOCK_DbManager";
-import { ManagerRegistry } from "../ManagerRegistry";
-import { UserStatus } from "./UserStatus";
-import { user_id, UserData, PublicUserData } from "./User";
-import { generateUsername } from "./UsernameGenerator";
+import { ManagerRegistry } from "./ManagerRegistry";
+import { generateUsername } from "../Utils/UsernameGenerator";
 
 const OFFLINE_THRESHOLD = 1000 * 60 * 5; // 5 minutes sans activité
+
+export type user_id = number
+
+export enum UserStatus{
+	OFFLINE = 0,
+	ONLINE = 1
+}
+
+export interface PublicUserData {
+	name: string;
+	status: UserStatus;
+	last_seen: number;
+}
+
+export interface UserData {
+	name:string
+	user_id : user_id,
+	last_seen: number,
+	status: UserStatus
+}
+
 
 @ManagerRegistry.register(DbManager)
 export class UserManager extends ManagerBase {
 	private users: Map<user_id, UserData> = new Map();
 	private nameToId: Map<string, user_id> = new Map();
+
+	//need to choose if i keep those 
 	private toSave: UserData[] = [];
 	private toRemove: UserData[] = [];
 
@@ -123,14 +144,17 @@ export class UserManager extends ManagerBase {
 		this.removeFromCache(user);
 	}
 
-	unloadInactiveUsers() {
+	unloadInactiveUsers() : user_id[]{
+		const inactive_users : user_id[] = [];
 		const now = Date.now();
 		for (const user of this.users.values()) {
 			if (now - user.last_seen > OFFLINE_THRESHOLD) {
 				user.status = UserStatus.OFFLINE;
+				inactive_users.push(user.user_id);
 				this.unloadUser(user.user_id);
 			}
 		}
+		return inactive_users;
 	}
 
 	// ---------------- Ping / Seen ----------------

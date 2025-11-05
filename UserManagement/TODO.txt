@@ -10,7 +10,7 @@ Commands:
 	add specific/generic errors
 
 usermanager:
-	remove old name from map username->id onUsernameChange
+	need to save the user's data on usersave
 
 AvatarManager:
 	Manage the upload/deletion/modification/retrieval of avatars 
@@ -18,10 +18,10 @@ AvatarManager:
 
 
 friendManager:
-	need to retest cause too much modification 
+
 
 MessageQueueManager:
-	test phase
+	
 
 
 CommandManager:

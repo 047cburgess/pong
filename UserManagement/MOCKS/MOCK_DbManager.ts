@@ -1,7 +1,7 @@
-import { ManagerBase } from "../Commands/CommandManager";
-import { UserData, user_id } from "../UserData/User";
-import { FriendRequest } from "../Friend/FriendManager";
-import { ManagerRegistry } from "../ManagerRegistry";
+import { ManagerBase } from "../Managers/CommandManager";
+import { UserData, user_id } from "../Managers/UserManager";
+import { FriendRequest } from "../Managers/FriendManager";
+import { ManagerRegistry } from "../Managers/ManagerRegistry";
 
 @ManagerRegistry.register()
 export class DbManager extends ManagerBase {
@@ -24,7 +24,6 @@ export class DbManager extends ManagerBase {
 		saveUsersCalls: 0,
 	};
 
-	// Flags pour simuler des erreurs
 	public shouldFailOnSave = false;
 	public shouldFailOnLoad = false;
 

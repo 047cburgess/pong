@@ -1,6 +1,5 @@
-import { PublicUserData, user_id, UserData } from "../UserData/User";
-import { UserManager } from "../UserData/UserManager";
-import { CommandBase, CommandManager, CommandResult } from "./CommandManager";
+import { UserManager, PublicUserData, user_id } from "../Managers/UserManager";
+import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 import { FriendRequestError } from "./RequestFriendCommand";
 
 @CommandManager.register(UserManager)
@@ -13,7 +12,6 @@ export class GetUserDataCommand extends CommandBase {
 		const user = this.userManager.getPublicByID(user_id);
 		if (!user)
 			return ({ success: false, errors: [FriendRequestError.USER_UNDEFINED] });
-		console.log('[COMMAND] GetUserData END'); //debug
 		return ({ success: true, errors: [], data: user });
 	}
 }

@@ -1,6 +1,6 @@
-import { ManagerBase } from "../Commands/CommandManager";
-import { ManagerRegistry } from "../ManagerRegistry";
-import { user_id } from "../UserData/User";
+import { ManagerBase } from "./CommandManager";
+import { ManagerRegistry } from "./ManagerRegistry";
+import { user_id } from "../Managers/UserManager";
 
 export interface Messages {
     type: MessagesTypes;

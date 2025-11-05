@@ -1,12 +1,10 @@
 //import { DbManager } from "../Database/DbManager";
 import { DbManager } from "../MOCKS/MOCK_DbManager";
-import { PublicUserData, user_id } from "../UserData/User";
-import { ManagerBase } from "../Commands/CommandManager";
-import { ManagerRegistry } from "../ManagerRegistry";
+import { user_id } from "./UserManager";
+import { ManagerBase } from "./CommandManager";
+import { ManagerRegistry } from "./ManagerRegistry";
 
 type friend_id = user_id;
-
-
 
 export enum FriendRequestStatus {
 	REFUSED = 0,
