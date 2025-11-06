@@ -10,11 +10,12 @@ export interface CustomGame {
 	hostId: UserId;
 	capacity: number;
 	invitedPlayers: UserId[];
-	acceptedPlayers?:UserId[];
+	acceptedPlayers:UserId[];
 	keys: GameKey[]; // same number as max players/capacity
 	status: GameStatus;
 	createdAt: Date;
 }
+
 export class CustomGameManager {
 	private log: FastifyBaseLogger;
 	private gameClient: GameServiceClient;
@@ -79,7 +80,7 @@ export class CustomGameManager {
 			invitedPlayers: playersToInvite,
 			acceptedPlayers: [],
 			keys: gameKeys,
-			status: 'waiting',
+			status: 'pending',
 			createdAt: new Date()
 		});
 		const invite: GameInviteEvent = {
@@ -122,7 +123,7 @@ export class CustomGameManager {
 			throw new ConflictError('You already accepted this invite');
 		}
 
-		if (game.status !== 'waiting') {
+		if (game.status !== 'pending') {
 			throw new ConflictError('Game already started or full');
 		}
 
@@ -203,13 +204,27 @@ export class CustomGameManager {
 			duration: gameResult.duration,
 		};
 
-		const participations: GameParticipationDB[] = gameResult.players.map(player => ({
-			userId: player.id,
-			score: player.score,
-			result: gameResult.winnerId === null
-				? 'draw'
-				: player.id === gameResult.winnerId ? 'win' : 'loss'
-		}));
+	
+		const participations: GameParticipationDB[] = gameResult.players.map(player => {
+			let gresult: 'win' | 'loss' | 'draw';
+
+			if (gameResult.winnerId === null){
+				gresult = 'draw';
+			}
+			else if (gameResult.winnerId === player.id) {
+				gresult = 'win';
+			}
+			else {
+				gresult = 'loss';
+			} 
+			
+			return {
+				userId: player.id,
+				score: player.score,
+				result: gresult,
+			};
+
+		});
 
 		this.gameRegistry.unregister(gameResult.id);
 		this.db.saveGame(gameDB, participations);

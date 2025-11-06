@@ -3,6 +3,7 @@ import { GameId } from '../types';
 
 export type GameType = 'custom' | 'queue' | 'tournament';
 
+//TODO: clean up old entries after a time out
 export interface GameRegistryEntry {
 	type: GameType;
 	createdAt: Date;

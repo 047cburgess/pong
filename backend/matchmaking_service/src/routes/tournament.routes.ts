@@ -7,25 +7,25 @@ import {
 	getTournamentStatusSchema
 } from './tournament.schemas';
 import { UnauthorizedError } from '../utils/errors';
-import { UserId } from '../types';
+import { NewTournamentRequest, InviteToTournamentRequest } from '../types';
 
 export default async function tournamentRoutes(fastify: FastifyInstance) {
 
 	// POST /tournaments/create - Create a new tournament
-	fastify.post('/tournaments/create', {
+	fastify.post<{ Body: NewTournamentRequest }>('/tournaments/create', {
 		schema: createTournamentSchema
 	}, async (request) => {
 		const hostId = Number(request.headers['x-user-id']);
 		if (!hostId)
 			throw new UnauthorizedError();
 
-		const { invitedPlayerIds } = request.body as { invitedPlayerIds?: UserId[] };
+		const { invitedPlayerIds } = request.body;
 		const response = await fastify.tournamentManager.createTournament(hostId, invitedPlayerIds);
 		return response;
 	});
 
 	// POST /tournaments/:tournamentId/invite - Invite additional players to tournament
-	fastify.post<{ Params: { tournamentId: string } }>('/tournaments/:tournamentId/invite', {
+	fastify.post<{ Params: { tournamentId: string }; Body: InviteToTournamentRequest }>('/tournaments/:tournamentId/invite', {
 		schema: inviteTournamentSchema
 	}, async (request) => {
 		const hostId = Number(request.headers['x-user-id']);
@@ -33,8 +33,8 @@ export default async function tournamentRoutes(fastify: FastifyInstance) {
 			throw new UnauthorizedError();
 
 		const tournamentId = request.params.tournamentId;
-		const { invitedPlayerIds } = request.body as { invitedPlayerIds: UserId[] };
-		const response = await fastify.tournamentManager.invitePlayer(tournamentId, hostId, invitedPlayerIds);
+		const { invitedPlayerIds } = request.body;
+		const response = fastify.tournamentManager.invitePlayer(tournamentId, hostId, invitedPlayerIds);
 		return response;
 	});
 
@@ -74,6 +74,7 @@ export default async function tournamentRoutes(fastify: FastifyInstance) {
 
 		const tournamentId = request.params.tournamentId;
 		const status = fastify.tournamentManager.getStatus(tournamentId, playerId);
+		fastify.log.debug(status);
 		return status;
 	});
 }

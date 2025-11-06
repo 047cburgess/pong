@@ -6,17 +6,21 @@ export const createTournamentSchema = {
       invitedPlayerIds: {
         type: 'array',
         items: { type: 'number' },
-        maxItems: 3,
-        description: 'Optional list of player IDs to invite (max 3, host is automatically included)'
+        description: 'Optional list of player IDs to invite. Tournament starts when 4 players register (host + 3 others).'
       }
     }
   },
   response: {
     200: {
       type: 'object',
-      required: ['tournamentId'],
+      required: ['tournamentId', 'invitedPlayers'],
       properties: {
-        tournamentId: { type: 'string' }
+        tournamentId: { type: 'string' },
+        invitedPlayers: {
+          type: 'array',
+          items: { type: 'number' },
+          description: 'Player IDs that successfully received invites'
+        }
       }
     },
     400: {

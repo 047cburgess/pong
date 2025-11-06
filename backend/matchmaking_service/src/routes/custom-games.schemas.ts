@@ -1,5 +1,4 @@
 // POST /games/create - Create custom game
-// TODO: check from compiled typespec -> check if script works at school
 export const createCustomGameSchema = {
   body: {
     type: 'object',

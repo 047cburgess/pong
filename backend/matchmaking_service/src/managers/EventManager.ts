@@ -1,14 +1,6 @@
 import type { FastifyReply } from 'fastify';
 import type { FastifyBaseLogger } from 'fastify';
-import { UserId, GameId, TournamentId } from '../types';
-
-interface GameInviteEvent {
-  id?: string;
-  event: 'GameInvite';
-  gameId: GameId;  // gameId
-  from: UserId;
-  // NOTE: token is NOT sent in invite - player gets it when they accept
-}
+import { UserId, GameId, TournamentId, GameInviteEvent, TournamentInviteEvent } from '../types';
 
 export interface InviteResponseEvent {
   event: 'InviteAccepted' | 'InviteDeclined';
@@ -16,20 +8,12 @@ export interface InviteResponseEvent {
   playerId: UserId;
 }
 
-// Tournament events
-interface TournamentInviteEvent {
-  event: 'TournamentInvite';
-  from: UserId;
-  tournamentId: TournamentId;
-}
-
-interface TournamentInviteResponseEvent {
+export interface TournamentInviteResponseEvent {
   event: 'TournamentInviteAccepted' | 'TournamentInviteDeclined';
   tournamentId: TournamentId;
-  playerId: UserId;
+  from: UserId;
 }
 
-// Union type of all possible events
 type SSEEvent =
   | GameInviteEvent
   | InviteResponseEvent
@@ -93,7 +77,7 @@ export class EventManager {
    * @param event - The event data to send
    * @returns Array of user IDs who successfully received the event (were online)
    */
-  broadcastEvent(userIds: UserId[], event: SSEEvent): string[] {
+  broadcastEvent(userIds: UserId[], event: SSEEvent): UserId[] {
     const deliveredTo: UserId[] = [];
     this.log.debug(`Event Manager: Preparing to Broadcast to ${deliveredTo}.`);
     userIds.forEach(userId => {

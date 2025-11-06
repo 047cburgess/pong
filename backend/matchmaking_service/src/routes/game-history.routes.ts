@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
 import { getPlayerGamesSchema, getPlayerStatsSchema, getGameByIdSchema, getPlayerTournamentsSchema, getTournamentByIdSchema} from './game-history.schemas';
-import { UserId, GameId, TournamentId } from '../types';
 import { UnauthorizedError } from '../utils/errors';
 
 //TODO: proper auth prehandler

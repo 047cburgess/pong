@@ -163,7 +163,6 @@ export function prepareStatements(db: Database.Database) {
       GROUP BY t.tournament_id
     `),
 
-    // Local game statements
     insertLocalGame: db.prepare(`
       INSERT INTO local_games (game_id, host_id, date, duration, winner_type, winner_guest_name)
       VALUES (?, ?, ?, ?, ?, ?)

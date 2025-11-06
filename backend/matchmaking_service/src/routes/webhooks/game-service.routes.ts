@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyInstance } from 'fastify';
 import { GameResultWebhook } from '../../types';
 import { gameResultWebhookSchema } from './game-service.schemas';
 
@@ -8,7 +8,7 @@ export default async function webhooksRoutes(fastify: FastifyInstance) {
 		Body: Omit<GameResultWebhook, 'id'>;
 	}>('/webhooks/games/:gameId/result', {
 		schema: gameResultWebhookSchema
-	}, async (req, reply) => {
+	}, async (req) => {
 		const gameId = req.params.gameId;
 		const gameResult: GameResultWebhook = {
 			id: gameId,

@@ -2,10 +2,9 @@ import { FastifyInstance } from 'fastify';
 import { createCustomGameSchema, joinGameSchema, declineGameSchema, viewGameSchema } from './custom-games.schemas';
 import { UnauthorizedError, NotFoundError } from '../utils/errors';
 import { UserId } from '../types';
-
 // TODO: Authentication -> should be a prehandler rather than being mixed in. Here temp.
-export default async function customGamesRoutes(fastify: FastifyInstance) {
 
+ 	export default async function customGamesRoutes(fastify: FastifyInstance) {
 	// POST /games/create - Create custom game
 	fastify.post('/games/create', {
 		schema: createCustomGameSchema
@@ -65,8 +64,6 @@ export default async function customGamesRoutes(fastify: FastifyInstance) {
 		}
 		const gameId = request.params.gameId;
 
-		// Only custom games can be declined via this endpoint
-		// Tournament invites are declined via /tournaments/:id/decline
 		const gameEntry = fastify.gameRegistry.get(gameId);
 		if (!gameEntry || gameEntry.type !== 'custom') {
 			throw new NotFoundError('Game not found');

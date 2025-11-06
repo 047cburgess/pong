@@ -4,16 +4,14 @@
     "module": "CommonJS",
     "outDir": "dist",
     "rootDir": "src",
-    "strict": false,
+    "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "baseUrl": "./src",
-    "paths": {
-      "@domains/*": ["domains/*"],
-      "@shared/*": ["shared/*"]
-    }
+    "typeRoots": ["./node_modules/@types", "./src/types"]
+
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "src/archive"]
+  "exclude": ["node_modules", "dist", "src/archive", "src/stuff"]
 }
 

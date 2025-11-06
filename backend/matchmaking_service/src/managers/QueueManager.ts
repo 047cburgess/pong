@@ -46,7 +46,7 @@ export class QueueManager {
 			throw new ConflictError('You are already in the queue');
 		}
 
-		for (const [gameId, game] of this.games.entries()) {
+		for (const game of this.games.values()) {
 			if (game.players.includes(userId)) {
 				throw new ConflictError('You are already in an active game');
 			}

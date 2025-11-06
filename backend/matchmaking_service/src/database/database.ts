@@ -5,7 +5,7 @@ import fs from 'fs';
 import seedDatabase from './seed';
 import { prepareStatements } from './statements';
 import { createTablesSQL } from './schema';
-import { UserId, GameId, TournamentId, GameResultDB, GameResultAPI, TournamentResultAPI, GameParticipationDB, TournamentResultDB, TournamentParticipationDB, DailyPlayerStatsAPI, PlayerStatsAPI, LocalGameDB, LocalGameParticipantDB, LocalTournamentDB } from '../types';
+import { UserId, GameId, TournamentId, GameResultDB, GameParticipationDB, TournamentResultDB, TournamentParticipationDB, LocalGameDB, LocalGameParticipantDB, LocalTournamentDB } from '../types';
 import type { FastifyInstance } from 'fastify';
 
 
@@ -46,7 +46,7 @@ async function dbPlugin(fastify: FastifyInstance) {
 
   const stmts = prepareStatements(db);
 
-  const isEmpty = db.prepare("SELECT COUNT(*) AS count FROM games").get().count === 0;
+  const isEmpty = (db.prepare("SELECT COUNT(*) AS count FROM games").get() as any).count === 0;
   if (isEmpty) {
     fastify.log.info("Seeding database with mock data");
     seedDatabase(db);

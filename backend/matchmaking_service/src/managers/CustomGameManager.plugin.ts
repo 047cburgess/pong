@@ -1,6 +1,5 @@
 import fp from 'fastify-plugin';
 import { CustomGameManager } from './CustomGameManager';
-import { GameServiceClient } from '../clients/game-service.client';
 import type { FastifyInstance } from 'fastify';
 
 declare module 'fastify' {

@@ -1,5 +1,4 @@
 import { FastifyInstance } from 'fastify';
-import { UserId } from '../types';
 import { UnauthorizedError } from '../utils/errors';
 
 export default async function eventsRoutes(fastify: FastifyInstance) {

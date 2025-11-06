@@ -38,10 +38,10 @@ const envToLogger = {
 
 const environment = process.env.NODE_ENV || 'development';
 const fastify = Fastify({
-  logger: envToLogger[environment] ?? true
+  logger: envToLogger[environment as keyof typeof envToLogger] ?? true
 });
 
-fastify.setErrorHandler((error, request, reply) => {
+fastify.setErrorHandler((error, _request, reply) => {
 
   // business logic errors
   if (error instanceof AppError) {

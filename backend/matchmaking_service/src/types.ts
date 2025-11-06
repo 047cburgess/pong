@@ -1,51 +1,33 @@
-export type UserId = number;
-export type GameMode = "classic" | "tournament";
-export type TournamentId = string | null;
-export type GameId = string;
-export type GameStatus = "waiting" | "ready" | "started"; // tbc on started if need
+import type { components as PublicAPIComponents } from './@types/PublicAPI';
+import type { components as InternalAPIComponents } from './@types/InternalApi';
+
+export type GameResultAPI = PublicAPIComponents['schemas']['GameResult'];
+export type TournamentResultAPI = PublicAPIComponents['schemas']['TournamentResult'];
+export type GameStatsAPI = PublicAPIComponents['schemas']['GameStats'];
+export type LocalGameSubmission = PublicAPIComponents['schemas']['LocalGameSubmission'];
+export type LocalTournamentSubmission = PublicAPIComponents['schemas']['LocalTournamentSubmission'];
+export type TournamentStatusAPI = PublicAPIComponents['schemas']['TournamentStatusResponse'];
+export type GameKey = PublicAPIComponents['schemas']['GameKey'];
+export type GameInviteEvent = PublicAPIComponents['schemas']['GameInvite'];
+export type TournamentInviteEvent = PublicAPIComponents['schemas']['TournamentInvite'];
+export type NewTournamentResponse = PublicAPIComponents['schemas']['CreateTournamentResponse'];
+export type InviteToTournamentResponse = PublicAPIComponents['schemas']['InviteTournamentResponse'];
+export type JoinTournamentResponse = PublicAPIComponents['schemas']['JoinTournamentResponse'];
 
 
-export interface Player {
-	id: UserId;
-	score: number;
-}
+// Internal API types (game service communication)
+export type NewGameRequest = InternalAPIComponents['schemas']['NewGameRequest'];
+export type NewGameResponse = InternalAPIComponents['schemas']['NewGameResponse'];
+export type NewTournamentGameResponse = InternalAPIComponents['schemas']['NewTournamentGameResponse'];
 
-// GAME TYPES 
-export interface GameKey {
-	key: string;
-	gameId: GameId;
-	expires: Date;
-}
-
-// openAPI
-export interface GameResultAPI {
-	id: GameId;
-	players: Player[];
-	winnerId?: UserId;
-	tournamentId?: TournamentId;
-	date: Date;
-	duration: string;
-}
-
-export interface TournamentResultAPI {
-  id: TournamentId;
-  date: Date;
-  participants: {
-    id: UserId;
-  }[];
-  games: {
-    semifinal1: GameResultAPI;
-    semifinal2: GameResultAPI;
-    final: GameResultAPI;
-  };
-}
-
+// Helper type extracted from GameStatsAPI for internal use
 export interface PlayerStatsAPI {
   wins: number;
   draws: number;
   losses: number;
 }
 
+// Helper type extracted from GameStatsAPI for internal use
 export interface DailyPlayerStatsAPI {
   day: string;
   wins: number;
@@ -53,21 +35,24 @@ export interface DailyPlayerStatsAPI {
   losses: number;
 }
 
-// combined stats response matching TypeSpec
-export interface GameStatsAPI {
-  lifetime: PlayerStatsAPI;
-  daily: DailyPlayerStatsAPI[];
-  recentMatches: GameResultAPI[];
-  recentTournaments: TournamentResultAPI[];
-}	
+export type UserId = number;
+export type GameMode = "classic" | "tournament";
+export type TournamentId = string | null;
+export type GameId = string;
+export type GameStatus = "pending" | "ready" | "complete";
+
+
+export interface Player {
+	id: UserId;
+	score: number;
+}
 
 // for database
 export interface GameResultDB {
 	id: GameId;
 	mode: GameMode;
-	//is_local: boolean;
-	tournamentId?: string;
-	winnerId?: string;
+	tournamentId: string | null;
+	winnerId: UserId | null;
 	date: Date;
 	duration: string;
 
@@ -76,7 +61,7 @@ export interface GameResultDB {
 export interface GameParticipationDB {
 	userId: UserId;
 	score: number;
-	result: 'win' | 'loss' | 'draw'
+	result: 'win' | 'loss' | 'draw';
 }
 
 export interface TournamentResultDB {
@@ -94,36 +79,13 @@ export interface TournamentParticipationDB {
 }
 
 
-// webhook receive
+// webhook receive / added id for my type
 export interface GameResultWebhook {
 	id: GameId;
 	players: Player[]; //id + score
-	winnerId?: string;
+	winnerId?: UserId | null;
 	date: Date;
 	duration: string;
-}
-
-// LOCAL GAME TYPES
-export interface LocalGameSubmission {
-	gameId: GameId; // from game service
-	players: {
-		id: UserId | string; // UserId for host, string for guests
-		score: number;
-	}[];
-	winnerId?: UserId | string;
-	duration: string;
-}
-
-export interface LocalTournamentSubmission {
-	// NO tournamentId - backend generates it
-	participants: {
-		id: UserId | string;
-	}[];
-	games: {
-		semifinal1: LocalGameSubmission;
-		semifinal2: LocalGameSubmission;
-		final: LocalGameSubmission;
-	};
 }
 
 // for database storage
@@ -156,83 +118,25 @@ export interface LocalTournamentDB {
 	date: Date;
 }
 
-// SSE EVENT TYPES - outgoing
-export interface GameInviteEvent {
-	id?: string;
-	event: "GameInvite";
-	gameId: GameId;
-	from: UserId;
-}
-
-export interface TournamentInviteEvent {
-	id?: string;
-	event: "TournamentInvite";
-	tournamentId: TournamentId;
-	from: UserId;
-}
-
-
-
-export interface CustomGame {
-	gameId: GameId;
-	hostId: UserId;
-	capacity: number;
-	invitedPlayers: UserId[];
-	acceptedPlayers?:UserId[];
-	keys: GameKey[]; // same number as max players/capacity
-	status: GameStatus;
-	createdAt: Date;
-}
-
-// INTERNAL API TYPES (requests to game service)
-// gameMode is omitted - derived from endpoint path
-export interface NewGameRequest {
-	nPlayers: number;
-}
-
-export interface NewGameResponse {
-	gameKeys: GameKey[];
-}
-
+// INTERNAL API TYPES (not in TypeSpec - custom request bodies)
 export interface NewTournamentGameRequest {
 	nPlayers: number;
 }
 
-export interface NewTournamentGameResponse {
-	gameKeys: GameKey[];
-	viewingKey: string;
-}
-
-// Tournament API Req/Res
 export interface NewTournamentRequest {
-	invitedPlayers?: UserId[];
-}
-
-export interface NewTournamentResponse {
-	tournamentId: TournamentId;
-	invitedPlayers: UserId[];
+	invitedPlayerIds?: UserId[];
 }
 
 export interface InviteToTournamentRequest {
-	tournamentId: TournamentId;
-	toInvite: UserId[];
-}
-
-export interface InviteToTournamentResponse {
-	tournamentId: TournamentId;
-	invitedPlayers: UserId[];
+	invitedPlayerIds: UserId[];
 }
 
 export interface JoinTournamentRequest {
-	tournamentId: TournamentId;
-}
-
-export interface JoinTournamentResponse {
-	tournamentId: TournamentId;
+	// No body fields - tournamentId comes from URL params
 }
 
 export type TournamentStatus = 'waiting' | 'ready' | 'semi1' | 'semi2' | 'final' | 'complete';
-export type TournamentGameStatus = 'pending' | 'ready' | 'complete';
+export type TournamentGameStage = 'semi1' | 'semi2' | 'final';
 
 export interface Tournament {
 	id: TournamentId;
@@ -241,44 +145,18 @@ export interface Tournament {
 	invitedPlayers: UserId[];
 	registeredPlayers: UserId[];
 	games: {
-		semi1?: GameId;
-		semi2?: GameId;
-		final?: GameId;
+		semi1?: GameId | null;
+		semi2?: GameId | null;
+		final?: GameId | null;
 	}
-	winner?: UserId;
+	winner?: UserId | null;
 	createdAt: Date;
-}
-
-export interface TournamentStatusAPI {
-	tournamentId: TournamentId;
-	status: TournamentStatus;
-	registeredPlayers: UserId[];
-	games: {
-		semi1: {
-			id?: GameId;
-			status: TournamentGameStatus;
-			players: Player[];
-			winner?: UserId;
-		};
-		semi2: {
-			id?: GameId;
-			status: TournamentGameStatus;
-			players: Player[];
-			winner?: UserId;
-		};
-		final: {
-			id?: GameId;
-			status: TournamentGameStatus;
-			players: Player[];
-			winner?: UserId;
-		};
-	};
 }
 
 export interface TournamentGame {
 	id: GameId;
 	tournamentId: TournamentId;
-	stage: 'semi1' | 'semi2' | 'final';
+	stage: TournamentGameStage;
 	status: GameStatus;
 	players?: [Player, Player];
 	gameKeys?: GameKey[];
