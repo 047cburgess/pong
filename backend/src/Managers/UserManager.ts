@@ -3,7 +3,7 @@ import { DbManager } from "../MOCKS/MOCK_DbManager";
 import { ManagerRegistry } from "./ManagerRegistry";
 import { generateUsername } from "../Utils/UsernameGenerator";
 
-const OFFLINE_THRESHOLD = 1000 * 60 * 5; // 5 minutes sans activité
+const OFFLINE_THRESHOLD = 1000 * 60 * 1; // 5 minutes sans activité
 
 export type user_id = number
 

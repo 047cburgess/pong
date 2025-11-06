@@ -67,7 +67,7 @@ export async function friendPlugin(server: FastifyInstance) {
 	/*
 		creates and send a friendrequest
 	*/
-	server.post("/user/friends/request/outgoing/:username", { preHandler: [resolveUserId, onUserSeen] }, async (request, reply) => {
+	server.post("/user/friends/requests/outgoing/:username", { preHandler: [resolveUserId, onUserSeen] }, async (request, reply) => {
 		const sender_id = request.sender_id!;
 		const receiver_id = request.user_id!;
 		const result = CommandManager.get(RequestFriendCommand).execute(sender_id, receiver_id);
@@ -80,7 +80,7 @@ export async function friendPlugin(server: FastifyInstance) {
 	/*
 		cancel friend request sent and not already accepted
 	*/
-	server.delete("/user/friends/request/outgoing/:username", { preHandler: [resolveUserId, onUserSeen] }, async (request, reply) => {
+	server.delete("/user/friends/requests/outgoing/:username", { preHandler: [resolveUserId, onUserSeen] }, async (request, reply) => {
 		const sender_id = request.sender_id!;
 		const receiver_id = request.user_id!;
 		const result = CommandManager.get(CancelFriendRequestCommand).execute(sender_id, receiver_id);
@@ -93,7 +93,7 @@ export async function friendPlugin(server: FastifyInstance) {
 	/*
 		accept incoming friend request from {username} could be separated
 	*/
-	server.put("/user/friends/request/:username", { preHandler: [resolveUserId, onUserSeen] }, async (request, reply) => {
+	server.put("/user/friends/requests/:username", { preHandler: [resolveUserId, onUserSeen] }, async (request, reply) => {
 		const receiver_id = request.sender_id!;
 		const sender_id = request.user_id!;
 		const action = request.body as string;
@@ -107,7 +107,7 @@ export async function friendPlugin(server: FastifyInstance) {
 	/*
 		refuse incoming friend request from {username}
 	*/
-	server.delete("/user/friends/request/:username", { preHandler: [resolveUserId, onUserSeen] }, async (request, reply) => {
+	server.delete("/user/friends/requests/:username", { preHandler: [resolveUserId, onUserSeen] }, async (request, reply) => {
 		const receiver_id = request.sender_id!;
 		const sender_id = request.user_id!;
 		const action = request.body as string;

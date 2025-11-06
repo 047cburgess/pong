@@ -74,6 +74,7 @@ export class FriendManager extends ManagerBase {
 				node.friends.add(isSender ? req.receiver_id : req.sender_id);
 				break;
 			case FriendRequestStatus.REFUSED:
+				node.friends.delete(isSender ? req.receiver_id : req.sender_id);
 				break;
 		}
 	}

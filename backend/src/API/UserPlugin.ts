@@ -44,7 +44,7 @@ export async function userPlugin(server : FastifyInstance) {
 		if (result.success)
 			return reply.status(204).send();
 		else
-			return reply.status(404).send();
+			return reply.status(404).send(result.errors);
 
 	});
 

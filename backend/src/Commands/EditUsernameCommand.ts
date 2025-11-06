@@ -3,6 +3,7 @@ import { CommandBase, CommandManager } from "../Managers/CommandManager";
 import { CommandResult } from "../Managers/CommandManager";
 import { FriendManager } from "../Managers/FriendManager";
 import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
+import { AvatarManager } from "../Managers/AvatarManager";
 
 export interface UserValidationResult {
 	success: boolean;
@@ -19,7 +20,7 @@ export enum UsernameErrors {
 
 
 
-@CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
+@CommandManager.register(UserManager, FriendManager, MessagesQueueManager, AvatarManager)
 export class EditUsernameCommand extends CommandBase {
 
 	private readonly VALID_USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
@@ -29,7 +30,9 @@ export class EditUsernameCommand extends CommandBase {
 	constructor(
 		private userManager: UserManager,
 		private friendManager: FriendManager,
-		private messageManager: MessagesQueueManager) { super(); }
+		private messageManager: MessagesQueueManager,
+		private avatarManager: AvatarManager
+	) { super(); }
 
 	private validateUsername(username: string): UserValidationResult {
 		const result: UserValidationResult = { success: false, errors: [] };
@@ -49,6 +52,14 @@ export class EditUsernameCommand extends CommandBase {
 
 	private notifyFriends(user_id: user_id, previousname: string, username: string) {
 		for (const friend of this.friendManager.getFriendList(user_id)) {
+			if (this.userManager.hasCached(friend))
+				this.messageManager.push(friend, { type: MessagesTypes.FRIEND_UPDATE_USERNAME, data: { prevname: previousname, newname: username } });
+		}
+		for (const friend of this.friendManager.getPendingRequests(user_id)) {
+			if (this.userManager.hasCached(friend))
+				this.messageManager.push(friend, { type: MessagesTypes.FRIEND_UPDATE_USERNAME, data: { prevname: previousname, newname: username } });
+		}
+		for (const friend of this.friendManager.getOutgoingRequests(user_id)) {
 			if (this.userManager.hasCached(friend))
 				this.messageManager.push(friend, { type: MessagesTypes.FRIEND_UPDATE_USERNAME, data: { prevname: previousname, newname: username } });
 		}
@@ -77,6 +88,7 @@ export class EditUsernameCommand extends CommandBase {
 			return { success: false, errors: [UsernameErrors.DOES_NOT_EXIST] };
 
 		this.notifyFriends(user_id, previousname, username);
+		this.avatarManager.renameAvatar(previousname, username);
 		return { success: true, errors: [] };
 	}
 }

@@ -9,9 +9,11 @@ export class ClearCacheCommand extends CommandBase {
 		private friendManager: FriendManager) { super(); }
 
 	execute() {
+		console.log('Clearing Cache START');
 		const inactive_users = this.userManager.unloadInactiveUsers();
 		this.friendManager.saveAll();
 		for(const user_id of inactive_users)
 			this.friendManager.unloadUser(user_id);
+		console.log('Clearing Cache END');
 	}
 }

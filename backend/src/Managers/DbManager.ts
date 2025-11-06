@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
-import { ManagerBase } from "../Managers/CommandManager";
-import { UserData, user_id } from "../Managers/UserManager";
-import { FriendRequest } from "../Managers/FriendManager";
+import { ManagerBase } from "./CommandManager";
+import { UserData, user_id } from "./UserManager";
+import { FriendRequest } from "./FriendManager";
 import { ManagerRegistry } from "./ManagerRegistry";
 
 export class DbManager extends ManagerBase {

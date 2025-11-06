@@ -33,12 +33,9 @@ export class AcceptFriendRequestCommand extends CommandBase {
 			status: FriendRequestStatus.ACCEPTED
 		});
 
-		if (senderNode) {
-			this.messagesManager.push(sender_id, { type: MessagesTypes.FRIENDREQUEST_ACCEPTED, data: receiver.name })
-			senderNode.outgoingRequests.delete(receiver_id);
-			senderNode.friends.add(receiver_id);
-		}
-
+		if (this.userManager.hasCached(sender_id))
+			this.messagesManager.push(sender_id, { type: MessagesTypes.FRIENDREQUEST_ACCEPTED, data: receiver.name });
+		
 		return { success: true, errors: [] };
 	}
 }

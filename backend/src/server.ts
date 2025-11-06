@@ -26,7 +26,7 @@ export function initializeApp() {
 	clearIntervalHandle = setInterval(() => {
 		CommandManager.get(ClearCacheCommand).execute();
 
-	}, 10 * 60 * 1000);
+	}, 1 * 60 * 1000);
 }
 
 export function createServer() {
@@ -34,8 +34,15 @@ export function createServer() {
 	const server = Fastify({ logger: false });
 
 	server.register(fastifyStatic, {
-		root: join(__dirname, "public"),
-	});
+        root: join(__dirname, "../../frontend"),
+        // Ajoutez l'option `setHeaders` pour vous assurer que les fichiers JS sont bien identifiés
+        setHeaders: (res, path, stat) => {
+            if (path.endsWith('.js')) {
+                res.setHeader('Content-Type', 'application/javascript');
+            }
+        },
+        // Assurez-vous que l'option `extensions` ou `decorateReply` n'a rien cassé
+    });
 
 	server.register(userPlugin);
 	server.register(friendPlugin);

@@ -28,7 +28,7 @@ export const resolveUserId = (request: FastifyRequest, reply: FastifyReply, done
 export const onUserSeen = (request: FastifyRequest, reply: FastifyReply, done : HookHandlerDoneFunction) => {
     // instead of jwt extraction for debug purpose only 
 	console.log("[SERVER] OnUserSenn...")
-    const testSenderId = request.headers['x-test-sender-id'];
+    const testSenderId = request.headers['x-user-id'];
     if (testSenderId) {
         request.sender_id = parseInt(testSenderId as string);
     }
