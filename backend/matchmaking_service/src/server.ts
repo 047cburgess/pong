@@ -45,6 +45,7 @@ fastify.setErrorHandler((error, _request, reply) => {
 
   // business logic errors
   if (error instanceof AppError) {
+  	fastify.log.error(error);
     return reply.code(error.statusCode).send({
       error: error.message
     });
@@ -52,6 +53,7 @@ fastify.setErrorHandler((error, _request, reply) => {
 
   // fastify schema validation errors
   if (error.validation) {
+  	fastify.log.error(error);
     return reply.code(400).send({
       error: 'Validation error',
       details: error.validation
@@ -60,6 +62,7 @@ fastify.setErrorHandler((error, _request, reply) => {
 
   // other non-server errors
   if (error.statusCode && error.statusCode < 500) {
+  	fastify.log.error(error);
     return reply.code(error.statusCode).send({
       error: error.message
     });

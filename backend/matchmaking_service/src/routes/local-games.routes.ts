@@ -6,7 +6,7 @@ import { LocalGameSubmission, LocalTournamentSubmission } from '../types';
 export default async function localGamesRoutes(fastify: FastifyInstance) {
 
 	// POST /games/local - Submit local game result
-	fastify.post('/games/local', {
+	fastify.post('/user/games/local', {
 		schema: submitLocalGameSchema
 	}, (request, reply) => {
 		const hostId = Number(request.headers['x-user-id']);
@@ -19,7 +19,7 @@ export default async function localGamesRoutes(fastify: FastifyInstance) {
 	});
 
 	// POST /tournaments/local - Submit local tournament result
-	fastify.post('/tournaments/local', {
+	fastify.post('/user/tournaments/local', {
 		schema: submitLocalTournamentSchema
 	}, (request, reply) => {
 		const hostId = Number(request.headers['x-user-id']);
