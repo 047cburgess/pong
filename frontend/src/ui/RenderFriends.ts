@@ -1,6 +1,6 @@
 import { UserCacheData } from "../cache/UserCache.js";
 import { acceptRequest, cancelRequest, declineRequest, removeFriend } from "../handlers/FriendHandlers.js";
-import { PublicUserData } from "../types.js";
+import { PublicInfo } from "../types.js";
 
 type ButtonAction = 'accept' | 'decline' | 'cancel' | 'remove';
 
@@ -26,7 +26,7 @@ export function removeUserFromList(containerId: string, userName: string) {
 	if (userEl) container.removeChild(userEl);
 }
 
-function renderIncomingList(incomingList: PublicUserData[]) {
+function renderIncomingList(incomingList: PublicInfo[]) {
 	const container = $('incomingList');
 	if (!container) return;
 	container.innerHTML = '';
@@ -36,29 +36,29 @@ function renderIncomingList(incomingList: PublicUserData[]) {
 	}
 }
 
-export function addIncoming(container: HTMLElement | null, user: PublicUserData) {
+export function addIncoming(container: HTMLElement | null, user: PublicInfo) {
 	if (!container) return;
 	const el = document.createElement('div');
 	el.className = 'flex justify-between border p-2 rounded';
 
 	el.innerHTML = `
 			<div class="flex items-center gap-3">
-				<img src="/user/avatars/${user.name}.webp" class="w-8 h-8 rounded-full"/>
-				<div class="font-medium">${user.name}</div>
+				<img src="/user/avatars/${user.username}.webp" class="w-8 h-8 rounded-full"/>
+				<div class="font-medium">${user.username}</div>
 			</div>
 			<div class="space-x-2"></div>
 		`;
 
 	const buttonContainer = el.querySelector('div.space-x-2')!;
 	buttonContainer.append(
-		createButton('✔️', 'accept', 'text-green-500', user.name),
-		createButton('❌', 'decline', 'text-red-500', user.name)
+		createButton('✔️', 'accept', 'text-green-500', user.username),
+		createButton('❌', 'decline', 'text-red-500', user.username)
 	);
 	container.appendChild(el);
 }
 
 
-function renderOutgoingList(outgoingList: PublicUserData[]) {
+function renderOutgoingList(outgoingList: PublicInfo[]) {
 	const container = $('outgoingList');
 	if (!container) return;
 	container.innerHTML = '';
@@ -68,27 +68,27 @@ function renderOutgoingList(outgoingList: PublicUserData[]) {
 	}
 }
 
-export function addOutgoing(container: HTMLElement | null, user: PublicUserData) {
+export function addOutgoing(container: HTMLElement | null, user: PublicInfo) {
 	if (!container) return;
 	const el = document.createElement('div');
 	el.className = 'flex justify-between border p-2 rounded';
 
 	el.innerHTML = `
 			<div class="flex items-center gap-3">
-				<img src="/user/avatars/${user.name}.webp" class="w-8 h-8 rounded-full"/>
-				<div class="font-medium">${user.name}</div>
+				<img src="/user/avatars/${user.username}.webp" class="w-8 h-8 rounded-full"/>
+				<div class="font-medium">${user.username}</div>
 			</div>
 			<div class="space-x-2"></div>
 		`;
 
 	const buttonContainer = el.querySelector('div.space-x-2')!;
-	buttonContainer.append(createButton('❌', 'cancel', 'text-red-500', user.name));
+	buttonContainer.append(createButton('❌', 'cancel', 'text-red-500', user.username));
 
 	container.appendChild(el);
 }
 
 // Friend List
-function renderFriendList(friendList: PublicUserData[]) {
+function renderFriendList(friendList: PublicInfo[]) {
 	const container = $('friendsList');
 	if (!container) return;
 	container.innerHTML = '';
@@ -98,23 +98,23 @@ function renderFriendList(friendList: PublicUserData[]) {
 	}
 }
 
-export function addFriend(container: HTMLElement | null, user: PublicUserData) {
+export function addFriend(container: HTMLElement | null, user: PublicInfo) {
 	if (!container) return;
 	const el = document.createElement('div');
 	el.className = 'flex justify-between border p-2 rounded';
 
-	const isOnline = user.status === 1;
+	const isOnline = Date.now() - user.lastSeen === 5 * 60 * 1000;
 	const color = isOnline ? 'bg-green-500' : 'bg-gray-400';
 	const lastSeenText = !isOnline
-		? `<div class="text-xs text-gray-500">Last seen: ${new Date(user.last_seen).toLocaleString()}</div>`
+		? `<div class="text-xs text-gray-500">Last seen: ${new Date(user.lastSeen).toLocaleString()}</div>`
 		: '';
 
 	el.innerHTML = `
 			<div class="flex items-center gap-3">
-				<img src="/user/avatars/${user.name}.webp" class="w-8 h-8 rounded-full"/>
+				<img src="/user/avatars/${user.username}.webp" class="w-8 h-8 rounded-full"/>
 				<div>
 					<div class="flex items-center gap-2">
-						<div class="font-medium">${user.name}</div>
+						<div class="font-medium">${user.username}</div>
 						<div class="w-3 h-3 rounded-full ${color}"></div>
 					</div>
 					${lastSeenText}
@@ -124,7 +124,7 @@ export function addFriend(container: HTMLElement | null, user: PublicUserData) {
 		`;
 
 	const buttonContainer = el.querySelector('div.space-x-2')!;
-	buttonContainer.append(createButton('❌', 'remove', 'text-red-500', user.name));
+	buttonContainer.append(createButton('❌', 'remove', 'text-red-500', user.username));
 
 	container.appendChild(el);
 }

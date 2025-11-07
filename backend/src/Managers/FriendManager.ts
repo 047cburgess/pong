@@ -1,5 +1,5 @@
 //import { DbManager } from "../Database/DbManager";
-import { DbManager } from "../MOCKS/MOCK_DbManager";
+import { DbManager } from "./DbManager";
 import { user_id } from "./UserManager";
 import { ManagerBase } from "./CommandManager";
 import { ManagerRegistry } from "./ManagerRegistry";

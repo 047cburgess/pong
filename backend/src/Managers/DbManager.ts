@@ -4,6 +4,7 @@ import { UserData, user_id } from "./UserManager";
 import { FriendRequest } from "./FriendManager";
 import { ManagerRegistry } from "./ManagerRegistry";
 
+@ManagerRegistry.register()
 export class DbManager extends ManagerBase {
 	private db: Database.Database;
 
@@ -34,11 +35,10 @@ export class DbManager extends ManagerBase {
 		// Users table
 		this.db.exec(`
 			CREATE TABLE IF NOT EXISTS users (
-				user_id INTEGER PRIMARY KEY,
-				name TEXT NOT NULL UNIQUE,
-				last_seen INTEGER NOT NULL,
-				status INTEGER NOT NULL
-			)
+				id INTEGER NOT NULL PRIMARY KEY,
+				name TEXT NOT NULL,
+				last_seen INTEGER NOT NULL
+			) WITHOUT ROWID
 		`);
 
 		// Friend requests table with request_id as PK
@@ -48,8 +48,8 @@ export class DbManager extends ManagerBase {
 				sender_id INTEGER NOT NULL,
 				receiver_id INTEGER NOT NULL,
 				status INTEGER NOT NULL,
-				FOREIGN KEY (sender_id) REFERENCES users(user_id) ON DELETE CASCADE,
-				FOREIGN KEY (receiver_id) REFERENCES users(user_id) ON DELETE CASCADE
+				FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+				FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
 			)
 		`);
 
@@ -62,21 +62,20 @@ export class DbManager extends ManagerBase {
 	private prepareStatements() {
 		return {
 			getUserById: this.db.prepare(`
-				SELECT user_id, name, last_seen, status FROM users WHERE user_id = ?
+				SELECT id, name, last_seen FROM users WHERE id = ?
 			`),
 			getUserByName: this.db.prepare(`
-				SELECT user_id, name, last_seen, status FROM users WHERE name = ?
+				SELECT id, name, last_seen FROM users WHERE name = ?
 			`),
 			hasUserByName: this.db.prepare(`SELECT 1 FROM users WHERE name = ? LIMIT 1`),
 			saveUser: this.db.prepare(`
-				INSERT INTO users (user_id, name, last_seen, status)
-				VALUES (?, ?, ?, ?)
-				ON CONFLICT(user_id) DO UPDATE SET
+				INSERT INTO users (id, name, last_seen)
+				VALUES (?, ?, ?)
+				ON CONFLICT(id) DO UPDATE SET
 					name = excluded.name,
-					last_seen = excluded.last_seen,
-					status = excluded.status
+					last_seen = excluded.last_seen
 			`),
-			removeUser: this.db.prepare(`DELETE FROM users WHERE user_id = ?`),
+			removeUser: this.db.prepare(`DELETE FROM users WHERE id = ?`),
 			getFriendRequests: this.db.prepare(`
 				SELECT request_id, sender_id, receiver_id, status
 				FROM friend_requests
@@ -111,7 +110,7 @@ export class DbManager extends ManagerBase {
 	}
 
 	saveUser(user: UserData): void {
-		this.stmts.saveUser.run(user.id, user.name, user.last_seen, user.status);
+		this.stmts.saveUser.run(user.id, user.name, user.last_seen);
 	}
 
 	removeUser(id: user_id): void {

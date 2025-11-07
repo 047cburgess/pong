@@ -1,5 +1,5 @@
 import { ManagerBase } from "./CommandManager";
-import { DbManager } from "../MOCKS/MOCK_DbManager";
+import { DbManager } from "./DbManager";
 import { ManagerRegistry } from "./ManagerRegistry";
 import { generateUsername } from "../Utils/UsernameGenerator";
 
@@ -12,18 +12,16 @@ export enum UserStatus{
 	ONLINE = 1
 }
 
-export interface PublicUserData {
+export interface PublicInfo {
 	id: number,
-	name: string;
-	//status: UserStatus;
-	last_seen: number;
+	username: string;
+	lastSeen: number;
 }
 
 export interface UserData {
-	name:string
 	id : user_id,
+	name:string,
 	last_seen: number,
-	status: UserStatus
 }
 
 
@@ -73,10 +71,10 @@ export class UserManager extends ManagerBase {
 
 	resolveUsername(username: string): user_id | undefined {
 		const cached = this.nameToId.get(username);
-		if (cached) return cached;
+		if (cached !== undefined) return cached;
 
 		const user = this.db.getUserByName(username);
-		if (user) {
+		if (user !== undefined) {
 			this.addToCache(user);
 			return user.id;
 		}
@@ -90,16 +88,16 @@ export class UserManager extends ManagerBase {
 
 	getOrLoadUserByID(id: user_id): UserData | undefined {
 		let user = this.users.get(id);
-		if (!user) {
+		if (user === undefined) {
 			user = this.db.getUserById(id);
-			if (user) this.addToCache(user);
+			if (user !== undefined) this.addToCache(user);
 		}
 		return user;
 	}
 
 	getOrLoadUserByName(username: string): UserData | undefined {
 		const id = this.nameToId.get(username);
-		if (id) return this.getOrLoadUserByID(id);
+		if (id !== undefined) return this.getOrLoadUserByID(id);
 
 		const user = this.db.getUserByName(username);
 		if (user) this.addToCache(user);
@@ -113,7 +111,6 @@ export class UserManager extends ManagerBase {
 		const user: UserData = {
 			id: id,
 			name: name ?? generateUsername(timestamp), //idk should we give a random username until chaged ?
-			status: UserStatus.ONLINE,
 			last_seen: timestamp,
 		};
 		this.addToCache(user);
@@ -124,7 +121,7 @@ export class UserManager extends ManagerBase {
 	//idk could be batch saved
 	saveUser(id: user_id) {
 		const user = this.users.get(id);
-		if (user) this.db.saveUser(user);
+		if (user !== undefined) this.db.saveUser(user);
 	}
 
 	removeUser(id: user_id) {
@@ -133,14 +130,12 @@ export class UserManager extends ManagerBase {
 	}
 
 	saveAll() {
-		for (const user of this.toSave) {
-			this.db.saveUser(user);
-		}
+		//not implemented cause not needed since the save is done on modifications
 	}
 
 	unloadUser(id: user_id) {
 		const user = this.users.get(id);
-		if (!user) return;
+		if (user === undefined) return;
 		this.db.saveUser(user);
 		this.removeFromCache(user);
 	}
@@ -150,7 +145,6 @@ export class UserManager extends ManagerBase {
 		const now = Date.now();
 		for (const user of this.users.values()) {
 			if (now - user.last_seen > OFFLINE_THRESHOLD) {
-				user.status = UserStatus.OFFLINE;
 				inactive_users.push(user.id);
 				this.unloadUser(user.id);
 			}
@@ -162,11 +156,10 @@ export class UserManager extends ManagerBase {
 
 	onUserSeen(id: user_id): UserData {
 		let user = this.users.get(id);
-		if (!user) {
+		if (user === undefined) {
 			user = this.getOrLoadUserByID(id) ?? this.createDefault(id);
 		}
 		user.last_seen = Date.now();
-		user.status = UserStatus.ONLINE;
 		return user;
 	}
 
@@ -185,39 +178,39 @@ export class UserManager extends ManagerBase {
 		return id ? this.users.get(id) : undefined;
 	}
 
-	// ---------------- Tools for PublicUserData -------------
-	toPublic(user: UserData): PublicUserData {
+	// ---------------- Tools for PublicInfo -------------
+	toPublic(user: UserData): PublicInfo {
 		return {
 			id : user.id,
-			name: user.name,
-			last_seen: user.last_seen
+			username: user.name,
+			lastSeen: user.last_seen
 		};
 	}
 
-	getPublicByID(id: user_id): PublicUserData | undefined {
+	getPublicByID(id: user_id): PublicInfo | undefined {
 		const user = this.getOrLoadUserByID(id);
 		return user ? this.toPublic(user) : undefined;
 	}
 
-	getPublicByUsername(username: string): PublicUserData | undefined {
+	getPublicByUsername(username: string): PublicInfo | undefined {
 		const user = this.getOrLoadUserByName(username);
 		return user ? this.toPublic(user) : undefined;
 	}
 
-	getPublicBatchByIDs(ids: user_id[]): PublicUserData[] {
-		const result: PublicUserData[] = [];
+	getPublicBatchByIDs(ids: user_id[]): PublicInfo[] {
+		const result: PublicInfo[] = [];
 		for (const id of ids) {
 			const user = this.getOrLoadUserByID(id);
-			if (user) result.push(this.toPublic(user));
+			if (user !== undefined) result.push(this.toPublic(user));
 		}
 		return result;
 	}
 
-	getPublicBatchByUsernames(usernames: string[]): PublicUserData[] {
-		const result: PublicUserData[] = [];
+	getPublicBatchByUsernames(usernames: string[]): PublicInfo[] {
+		const result: PublicInfo[] = [];
 		for (const name of usernames) {
 			const user = this.getOrLoadUserByName(name);
-			if (user) result.push(this.toPublic(user));
+			if (user !== undefined) result.push(this.toPublic(user));
 		}
 		return result;
 	}
@@ -237,7 +230,6 @@ export class UserManager extends ManagerBase {
 			for (const [id, user] of this.users.entries()) {
 				console.log(`  • ID: ${id}`);
 				console.log(`    Name: ${user.name}`);
-				console.log(`    Status: ${UserStatus[user.status]}`);
 				console.log(`    Last activity: ${new Date(user.last_seen).toLocaleString()}`);
 			}
 		}

@@ -20,7 +20,7 @@ export enum UsernameErrors {
 
 
 
-@CommandManager.register(UserManager, FriendManager, AvatarManager)
+@CommandManager.register(UserManager, AvatarManager)
 export class EditUsernameCommand extends CommandBase {
 
 	private readonly VALID_USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
@@ -29,7 +29,6 @@ export class EditUsernameCommand extends CommandBase {
 
 	constructor(
 		private userManager: UserManager,
-		private friendManager: FriendManager,
 		private avatarManager: AvatarManager
 	) { super(); }
 

@@ -27,6 +27,5 @@ export class RemoveFriendCommand extends CommandBase {
 			status: FriendRequestStatus.REFUSED
 		});
 		return ({ success: true, errors: [] });
-
 	}
 }

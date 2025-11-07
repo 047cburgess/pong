@@ -38,7 +38,7 @@ export async function onUsernameChange(username: string): Promise<string[] | und
 	const user_id = userId();
 	const res = await userApi.changeUsername(username, user_id);
 	if (res.status === 204) {
-		userCache.get(user_id)!.user.name = username;
+		userCache.get(user_id)!.user.username = username;
 		return
 	}
 	else

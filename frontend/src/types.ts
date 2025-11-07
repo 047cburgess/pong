@@ -24,10 +24,10 @@ export enum UserStatus {
 	ONLINE = 1
 }
 
-export interface PublicUserData {
-	name: string;
-	status: UserStatus;
-	last_seen: number;
+export interface PublicInfo {
+	id : user_id;
+	username: string;
+	lastSeen: number;
 }
 
 export interface Messages {

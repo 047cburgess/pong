@@ -15,12 +15,10 @@ import './ui/RenderFriends.js';
 
 import './ui/buttons/AddFriendButton.js';
 import './ui/buttons/EditUsernameButton.js';
-import './ui/buttons/NotificationsButton.js';
 import './ui/buttons/UploadAvatarButton.js';
 
 
 import './handlers/FriendHandlers.js';
-import './handlers/NotificationsHandlers.js';
 import './handlers/UsernameHandlers.js';
 
 
@@ -29,7 +27,6 @@ import { userApi } from "./api/UserApi.js";
 import { init_usercache, userCache } from "./cache/UserCache.js";
 import { initAddFriendBtn } from "./ui/buttons/AddFriendButton.js";
 import { initEditUsernameBtn } from "./ui/buttons/EditUsernameButton.js";
-import { initNotificationsBtn } from "./ui/buttons/NotificationsButton.js";
 import { initUploadAvatarBtn } from "./ui/buttons/UploadAvatarButton.js";
 import { renderFriendsLists } from "./ui/RenderFriends.js";
 import { renderUserCard } from "./ui/RenderUser.js";
@@ -78,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	initUserSelect('userSelect');
 	initAddFriendBtn();
 	initEditUsernameBtn();
-	initNotificationsBtn();
 	initUploadAvatarBtn();
 	initDeleteUserBtn();
 

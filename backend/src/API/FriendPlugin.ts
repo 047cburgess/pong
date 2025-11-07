@@ -125,6 +125,7 @@ export async function friendPlugin(server: FastifyInstance) {
 	server.delete("/user/friends/:username", { preHandler: [resolveUserId, onUserSeen] }, async (request, reply) => {
 		const user_id = request.sender_id!;
 		const friend_id = request.user_id!;
+		console.log(`user_id = ${user_id}, friend_id = ${friend_id}`);
 		const result = CommandManager.get(RemoveFriendCommand).execute(user_id, friend_id);
 		if (result.success)
 			reply.status(204).send();

@@ -5,13 +5,7 @@ import { GetUserDataCommand } from "../Commands/GetUserDataCommand";
 import { EditUsernameCommand } from "../Commands/EditUsernameCommand";
 import { RemoveUserCommand } from "../Commands/RemoveUserCommand";
 
-export async function userPlugin(server : FastifyInstance) {
-	/*
-		returns user_id for username, should be an internal call only
-	*/
-	server.get("/user/:username/id", { preHandler: [resolveUserId] }, async (request, reply) => {
-		return reply.status(200).send(request.user_id!);
-	});
+export async function userPlugin(server: FastifyInstance) {
 
 	/*
 		returns userdata of sender 
@@ -40,7 +34,7 @@ export async function userPlugin(server : FastifyInstance) {
 	*/
 	server.put("/user/username", { preHandler: onUserSeen }, async (request, reply) => {
 		const user_id = request.sender_id!;
-		const username = (request.body as {username : string}).username;
+		const username = (request.body as { username: string }).username;
 		const result = CommandManager.get(EditUsernameCommand).execute(user_id, username!);
 		if (result.success)
 			return reply.status(204).send();
@@ -54,5 +48,4 @@ export async function userPlugin(server : FastifyInstance) {
 		if (result.success)
 			return reply.status(204).send();
 	});
-
 }

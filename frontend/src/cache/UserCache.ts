@@ -1,12 +1,12 @@
 import { friendsApi } from "../api/FriendsApi.js";
 import { userApi } from "../api/UserApi.js";
-import { user_id, PublicUserData, Messages } from "../types.js";
+import { user_id, PublicInfo, Messages } from "../types.js";
 
 export interface UserCacheData {
-	user: PublicUserData;
-	friends: Map<string, PublicUserData>;
-	outgoing: Map<string, PublicUserData>;
-	incoming: Map<string, PublicUserData>;
+	user: PublicInfo;
+	friends: Map<string, PublicInfo>;
+	outgoing: Map<string, PublicInfo>;
+	incoming: Map<string, PublicInfo>;
 }
 
 const cache = new Map<user_id, UserCacheData>();
@@ -31,16 +31,16 @@ export async function init_usercache(user_id: number): Promise<UserCacheData | u
 	if(friends.status >= 400 || outgoing.status >= 400 || incoming.status >= 400)
 		return undefined;
 
-	const friendMap = new Map<string, PublicUserData>(
-		(friends.data ?? []).map(u => [u.name, u])
+	const friendMap = new Map<string, PublicInfo>(
+		(friends.data ?? []).map(u => [u.username, u])
 	);
 
-	const outgoingMap = new Map<string, PublicUserData>(
-		(outgoing.data ?? []).map(u => [u.name, u])
+	const outgoingMap = new Map<string, PublicInfo>(
+		(outgoing.data ?? []).map(u => [u.username, u])
 	);
 
-	const incomingMap = new Map<string, PublicUserData>(
-		(incoming.data ?? []).map(u => [u.name, u])
+	const incomingMap = new Map<string, PublicInfo>(
+		(incoming.data ?? []).map(u => [u.username, u])
 	);
 
 	const cache: UserCacheData = {

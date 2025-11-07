@@ -1,9 +1,8 @@
 import { ManagerBase } from "../Managers/CommandManager";
 import { UserData, user_id } from "../Managers/UserManager";
 import { FriendRequest } from "../Managers/FriendManager";
-import { ManagerRegistry } from "../Managers/ManagerRegistry";
 
-@ManagerRegistry.register()
+//@ManagerRegistry.register()
 export class DbManager extends ManagerBase {
 	// In-memory storage
 	private users: Map<user_id, UserData> = new Map();
@@ -151,7 +150,7 @@ export class DbManager extends ManagerBase {
 		console.log("=== MOCK DB STATE ===");
 		console.log("Users:");
 		for (const u of this.users.values()) {
-			console.log(`  [${u.id}] ${u.name} (status: ${u.status}, last_seen: ${u.last_seen})`);
+			console.log(`  [${u.id}] ${u.name} (last_seen: ${u.last_seen})`);
 		}
 		console.log("Friend Requests:");
 		for (const r of this.friendRequests.values()) {

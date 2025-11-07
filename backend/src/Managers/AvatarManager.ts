@@ -2,7 +2,6 @@ import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
 import { ManagerRegistry } from "./ManagerRegistry";
-import fastifyStatic from "@fastify/static";
 import { ManagerBase } from "./CommandManager";
 
 const AVAILABLE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
