@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import { config } from './config/config';
 import { AppError } from './utils/errors'
+import fastifyMetrics from 'fastify-metrics';
 import dbPlugin from './database/database';
 import gameServicePlugin from './clients/game-service.plugin';
 import gameRegistryPlugin from './managers/GameRegistry.plugin';
@@ -41,6 +42,17 @@ const fastify = Fastify({
   logger: envToLogger[environment as keyof typeof envToLogger] ?? true
 });
 
+fastify.register(fastifyMetrics, {
+  endpoint: '/metrics',
+  defaultMetrics: {
+    enabled: true,
+    prefix: 'matchmaking_'
+  },
+  routeMetrics: {
+    enabled: true,
+  },
+});
+
 fastify.setErrorHandler((error, _request, reply) => {
 
   // business logic errors
@@ -75,6 +87,7 @@ fastify.setErrorHandler((error, _request, reply) => {
 });
 
 
+
 // REGISTER ALL THE ROUTES & plugins
 fastify.register(dbPlugin);
 fastify.register(gameServicePlugin);
@@ -91,6 +104,7 @@ fastify.register(gameHistoryRoutes);
 fastify.register(eventsRoutes);
 fastify.register(tournamentRoutes);
 fastify.register(localGamesRoutes);
+
 
 fastify.listen({ port: config.PORT, host: '0.0.0.0'}, (err, address) => {
 	if (err) {

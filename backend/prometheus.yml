@@ -1,0 +1,7 @@
+global:
+  scrape_interval:     5s # By default, scrape targets every 15 seconds.
+
+scrape_configs:
+  - job_name: 'matchmaking-service'
+    static_configs:
+      - targets: ['matchmaking-service:3000']
