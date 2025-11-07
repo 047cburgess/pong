@@ -111,7 +111,7 @@ export class DbManager extends ManagerBase {
 	}
 
 	saveUser(user: UserData): void {
-		this.stmts.saveUser.run(user.user_id, user.name, user.last_seen, user.status);
+		this.stmts.saveUser.run(user.id, user.name, user.last_seen, user.status);
 	}
 
 	removeUser(id: user_id): void {

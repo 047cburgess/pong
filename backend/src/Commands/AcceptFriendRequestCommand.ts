@@ -1,16 +1,14 @@
 import { FriendManager, FriendRequestStatus } from "../Managers/FriendManager";
-import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
 import { UserManager, user_id } from "../Managers/UserManager";
 import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 import { FriendRequestError } from "./RequestFriendCommand";
 
-@CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
+@CommandManager.register(UserManager, FriendManager)
 export class AcceptFriendRequestCommand extends CommandBase {
 
 	constructor(
 		private userManager: UserManager,
 		private friendManager: FriendManager,
-		private messagesManager: MessagesQueueManager
 	) { super() }
 
 	execute(receiver_id: user_id, sender_id: user_id): CommandResult {
@@ -33,9 +31,6 @@ export class AcceptFriendRequestCommand extends CommandBase {
 			status: FriendRequestStatus.ACCEPTED
 		});
 
-		if (this.userManager.hasCached(sender_id))
-			this.messagesManager.push(sender_id, { type: MessagesTypes.FRIENDREQUEST_ACCEPTED, data: receiver.name });
-		
 		return { success: true, errors: [] };
 	}
 }

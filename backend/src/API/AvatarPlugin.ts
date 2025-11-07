@@ -37,18 +37,18 @@ export async function avatarPlugin(server: FastifyInstance) {
 			const mpFile = await request.file();
 
 			if (!mpFile) {
-				return reply.status(400).send({ success: false, error: "NO_FILE_RECEIVED" });
+				return reply.status(400).send("NO_FILE_RECEIVED");
 			}
 			const buffer = await mpFile.toBuffer();
 			await CommandManager.get(UploadAvatarCommand).execute(user_id!, { buffer: buffer, mimetype: mpFile.mimetype });
 			return reply.status(204).send();
 		} catch (err: any) {
 			if (err.code === "FST_FILES_LIMIT" || err.message.includes("File too large")) {
-				return reply.status(413).send(["FILE_TOO_LARGE"]);
+				return reply.status(413).send("FILE_TOO_LARGE");
 			}
 
 			console.error("[/user/avatar] upload error:", err);
-			return reply.status(500).send([err.message]);
+			return reply.status(500).send(err.message);
 		}
 	});
 }

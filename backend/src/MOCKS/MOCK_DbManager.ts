@@ -54,7 +54,7 @@ export class DbManager extends ManagerBase {
 
 	seed(users: UserData[], requests: Omit<FriendRequest, 'request_id'>[] = []): void {
 		for (const u of users) {
-			this.users.set(u.user_id, { ...u });
+			this.users.set(u.id, { ...u });
 			this.usersByName.set(u.name, { ...u });
 		}
 		for (const r of requests) {
@@ -84,10 +84,10 @@ export class DbManager extends ManagerBase {
 
 	saveUser(user: UserData): void {
 		this.stats.saveUserCalls++;
-		const old = this.users.get(user.user_id);
+		const old = this.users.get(user.id);
 		if (old && old.name !== user.name) this.usersByName.delete(old.name);
 		const clone = { ...user };
-		this.users.set(user.user_id, clone);
+		this.users.set(user.id, clone);
 		this.usersByName.set(user.name, clone);
 	}
 
@@ -151,7 +151,7 @@ export class DbManager extends ManagerBase {
 		console.log("=== MOCK DB STATE ===");
 		console.log("Users:");
 		for (const u of this.users.values()) {
-			console.log(`  [${u.user_id}] ${u.name} (status: ${u.status}, last_seen: ${u.last_seen})`);
+			console.log(`  [${u.id}] ${u.name} (status: ${u.status}, last_seen: ${u.last_seen})`);
 		}
 		console.log("Friend Requests:");
 		for (const r of this.friendRequests.values()) {

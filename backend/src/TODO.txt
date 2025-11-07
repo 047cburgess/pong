@@ -13,8 +13,7 @@ usermanager:
 	need to save the user's data on usersave
 
 AvatarManager:
-	Manage the upload/deletion/modification/retrieval of avatars 
-	everything to do 
+
 
 
 friendManager:

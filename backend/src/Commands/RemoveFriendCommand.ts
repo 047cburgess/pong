@@ -1,15 +1,13 @@
 import { FriendManager, FriendRequestStatus } from "../Managers/FriendManager";
-import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
 import { user_id, UserManager } from "../Managers/UserManager";
 import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 import { FriendRequestError } from "./RequestFriendCommand";
 
-@CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
+@CommandManager.register(UserManager, FriendManager)
 export class RemoveFriendCommand extends CommandBase {
 	constructor(
 		private userManager: UserManager,
-		private friendManager: FriendManager,
-		private messageManager: MessagesQueueManager
+		private friendManager: FriendManager
 	) { super() }
 
 	execute(user_id: user_id, friend_id: user_id): CommandResult {
@@ -22,10 +20,6 @@ export class RemoveFriendCommand extends CommandBase {
 			return { success: false, errors: [FriendRequestError.FRIEND_NOT] };
 
 		userNode.friends.delete(friend_id);
-
-		if (this.userManager.hasCached(friend_id)) {
-			this.messageManager.push(friend_id, { type: MessagesTypes.FRIEND_UPDATE_REMOVED, data: user.name })
-		}
 
 		this.friendManager.upsertUpdate({
 			sender_id: user_id,

@@ -1,10 +1,8 @@
 import { UserManager, user_id } from "../Managers/UserManager";
 import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
-import { FriendManager } from "../Managers/FriendManager";
-import { MessagesQueueManager } from "../Managers/MessagesQueueManager";
 import { AvatarManager } from "../Managers/AvatarManager";
 import sharp from "sharp";
-import fastifyMultipart, { MultipartFile } from "fastify-multipart";
+
 
 export interface AvatarValidationResult {
 	success: boolean;

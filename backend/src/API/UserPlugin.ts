@@ -25,6 +25,7 @@ export async function userPlugin(server : FastifyInstance) {
 			return reply.status(404).send();
 	});
 
+	//works with ids too 
 	server.get("/user/:username", { preHandler: [resolveUserId, onUserSeen] }, async (request, reply) => {
 		const user_id = request.user_id!;
 		const result = CommandManager.get(GetUserDataCommand).execute(user_id);
@@ -39,13 +40,12 @@ export async function userPlugin(server : FastifyInstance) {
 	*/
 	server.put("/user/username", { preHandler: onUserSeen }, async (request, reply) => {
 		const user_id = request.sender_id!;
-		const username = (request.body as Params).username;
-		const result = CommandManager.get(EditUsernameCommand).execute(user_id, username);
+		const username = (request.body as {username : string}).username;
+		const result = CommandManager.get(EditUsernameCommand).execute(user_id, username!);
 		if (result.success)
 			return reply.status(204).send();
 		else
 			return reply.status(404).send(result.errors);
-
 	});
 
 	server.delete("/user", { preHandler: onUserSeen }, async (request, reply) => {

@@ -13,14 +13,15 @@ export enum UserStatus{
 }
 
 export interface PublicUserData {
+	id: number,
 	name: string;
-	status: UserStatus;
+	//status: UserStatus;
 	last_seen: number;
 }
 
 export interface UserData {
 	name:string
-	user_id : user_id,
+	id : user_id,
 	last_seen: number,
 	status: UserStatus
 }
@@ -42,12 +43,12 @@ export class UserManager extends ManagerBase {
 	// ---------------- Cache Utils ----------------
 
 	private addToCache(user: UserData) {
-		this.users.set(user.user_id, user);
-		this.nameToId.set(user.name, user.user_id);
+		this.users.set(user.id, user);
+		this.nameToId.set(user.name, user.id);
 	}
 
 	private removeFromCache(user: UserData) {
-		this.users.delete(user.user_id);
+		this.users.delete(user.id);
 		this.nameToId.delete(user.name);
 	}
 
@@ -77,7 +78,7 @@ export class UserManager extends ManagerBase {
 		const user = this.db.getUserByName(username);
 		if (user) {
 			this.addToCache(user);
-			return user.user_id;
+			return user.id;
 		}
 		return undefined;
 	}
@@ -110,7 +111,7 @@ export class UserManager extends ManagerBase {
 	createDefault(id: user_id, name?: string): UserData {
 		const timestamp = Date.now();
 		const user: UserData = {
-			user_id: id,
+			id: id,
 			name: name ?? generateUsername(timestamp), //idk should we give a random username until chaged ?
 			status: UserStatus.ONLINE,
 			last_seen: timestamp,
@@ -150,8 +151,8 @@ export class UserManager extends ManagerBase {
 		for (const user of this.users.values()) {
 			if (now - user.last_seen > OFFLINE_THRESHOLD) {
 				user.status = UserStatus.OFFLINE;
-				inactive_users.push(user.user_id);
-				this.unloadUser(user.user_id);
+				inactive_users.push(user.id);
+				this.unloadUser(user.id);
 			}
 		}
 		return inactive_users;
@@ -187,8 +188,8 @@ export class UserManager extends ManagerBase {
 	// ---------------- Tools for PublicUserData -------------
 	toPublic(user: UserData): PublicUserData {
 		return {
+			id : user.id,
 			name: user.name,
-			status: user.status,
 			last_seen: user.last_seen
 		};
 	}
@@ -250,6 +251,5 @@ export class UserManager extends ManagerBase {
 		}
 		console.log("\n" + "═".repeat(42) + "\n");
 	}
-
 }
 

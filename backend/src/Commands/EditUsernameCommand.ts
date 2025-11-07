@@ -2,7 +2,6 @@ import { UserManager, user_id } from "../Managers/UserManager";
 import { CommandBase, CommandManager } from "../Managers/CommandManager";
 import { CommandResult } from "../Managers/CommandManager";
 import { FriendManager } from "../Managers/FriendManager";
-import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
 import { AvatarManager } from "../Managers/AvatarManager";
 
 export interface UserValidationResult {
@@ -14,13 +13,14 @@ export enum UsernameErrors {
 	TOO_SHORT = "TOO_SHORT",
 	TOO_LONG = "TOO_LONG",
 	INVALID_CHARACTERS = "INVALID_CHARACTERS", // caractères invalides
+	MUST_CONTAIN_LETTERS = "MUST_CONTAIN_LETTERS",
 	ALREADY_TAKEN = "ALREADY_TAKEN",
 	DOES_NOT_EXIST = "DOES_NOT_EXIST",
 }
 
 
 
-@CommandManager.register(UserManager, FriendManager, MessagesQueueManager, AvatarManager)
+@CommandManager.register(UserManager, FriendManager, AvatarManager)
 export class EditUsernameCommand extends CommandBase {
 
 	private readonly VALID_USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
@@ -30,7 +30,6 @@ export class EditUsernameCommand extends CommandBase {
 	constructor(
 		private userManager: UserManager,
 		private friendManager: FriendManager,
-		private messageManager: MessagesQueueManager,
 		private avatarManager: AvatarManager
 	) { super(); }
 
@@ -45,24 +44,10 @@ export class EditUsernameCommand extends CommandBase {
 			result.errors.push(UsernameErrors.TOO_LONG);
 		if (!this.VALID_USERNAME_REGEX.test(username))
 			result.errors.push(UsernameErrors.INVALID_CHARACTERS);
-
+		if (!/[a-zA-Z]/.test(username))
+			result.errors.push(UsernameErrors.MUST_CONTAIN_LETTERS);
 		if (result.errors.length === 0) result.success = true;
 		return result;
-	}
-
-	private notifyFriends(user_id: user_id, previousname: string, username: string) {
-		for (const friend of this.friendManager.getFriendList(user_id)) {
-			if (this.userManager.hasCached(friend))
-				this.messageManager.push(friend, { type: MessagesTypes.FRIEND_UPDATE_USERNAME, data: { prevname: previousname, newname: username } });
-		}
-		for (const friend of this.friendManager.getPendingRequests(user_id)) {
-			if (this.userManager.hasCached(friend))
-				this.messageManager.push(friend, { type: MessagesTypes.FRIEND_UPDATE_USERNAME, data: { prevname: previousname, newname: username } });
-		}
-		for (const friend of this.friendManager.getOutgoingRequests(user_id)) {
-			if (this.userManager.hasCached(friend))
-				this.messageManager.push(friend, { type: MessagesTypes.FRIEND_UPDATE_USERNAME, data: { prevname: previousname, newname: username } });
-		}
 	}
 
 	execute(user_id: user_id, username: string): CommandResult {
@@ -87,7 +72,6 @@ export class EditUsernameCommand extends CommandBase {
 		else
 			return { success: false, errors: [UsernameErrors.DOES_NOT_EXIST] };
 
-		this.notifyFriends(user_id, previousname, username);
 		this.avatarManager.renameAvatar(previousname, username);
 		return { success: true, errors: [] };
 	}

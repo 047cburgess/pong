@@ -9,7 +9,7 @@ import { CancelFriendRequestCommand } from "../Commands/CancelFriendRequestComma
 import { AcceptFriendRequestCommand } from "../Commands/AcceptFriendRequestCommand";
 import { RefuseFriendRequestCommand } from "../Commands/RefuseFriendRequestCommand";
 import { RemoveFriendCommand } from "../Commands/RemoveFriendCommand";
-import { GetQueuedMessagesCommand } from "../Commands/GetQueuedMessagesCommand";
+import { GetFriendshipStateCommand } from "../Commands/GetFriendshipStateCommand";
 
 export async function friendPlugin(server: FastifyInstance) {
 
@@ -26,12 +26,13 @@ export async function friendPlugin(server: FastifyInstance) {
 	})
 
 	/*
-		get friends public data, idk if we'll keep it ?
+		checks friendship state
 	*/
-	server.get("/user/friends/:username", { preHandler: resolveUserId }, async (request, reply) => {
-		const user_id = request.user_id;
-		//should load user  data cause the public version does not assure that the user is loaded
-		const result = CommandManager.get(GetFriendsData).execute(user_id!);
+	server.get("/user/friends/:username", { preHandler: [resolveUserId, onUserSeen] }, async (request, reply) => {
+		const user_id = request.sender_id;
+		const friend_id = request.user_id;
+
+		const result = CommandManager.get(GetFriendshipStateCommand).execute(user_id!, friend_id!);
 		if (result.success === true) {
 			reply.status(200).send(result.data!);
 		}
@@ -131,12 +132,4 @@ export async function friendPlugin(server: FastifyInstance) {
 			reply.status(404).send(result.errors);
 	})
 
-	server.get("/user/friends/notifications", { preHandler: [onUserSeen] }, async (request, reply) => {
-		const user_id = request.sender_id!;
-		const result = CommandManager.get(GetQueuedMessagesCommand).execute(user_id);
-		if (result.success)
-			return reply.status(200).send(result.data);
-		else
-			return reply.status(404).send(result.data);
-	});
 }

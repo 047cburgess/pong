@@ -34,7 +34,7 @@ export function createServer() {
 	const server = Fastify({ logger: false });
 
 	server.register(fastifyStatic, {
-        root: join(__dirname, "../../frontend"),
+        root: join(__dirname, "../../../frontend"),
         // Ajoutez l'option `setHeaders` pour vous assurer que les fichiers JS sont bien identifiés
         setHeaders: (res, path, stat) => {
             if (path.endsWith('.js')) {

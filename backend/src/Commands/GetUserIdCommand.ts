@@ -11,6 +11,6 @@ export class GetUserIdCommand extends CommandBase {
 		const user = this.userManager.getOrLoadUserByName(username);
 		if (!user)
 			return { success: false, errors: [FriendRequestError.USER_UNDEFINED] };
-		return { success: true, errors: [], data: user.user_id };
+		return { success: true, errors: [], data: user.id };
 	}
 }

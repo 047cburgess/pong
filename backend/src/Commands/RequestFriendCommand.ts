@@ -1,5 +1,4 @@
 import { FriendManager, FriendRequest, FriendRequestStatus } from "../Managers/FriendManager";
-import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
 import { UserManager, user_id } from "../Managers/UserManager";
 import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 import { AcceptFriendRequestCommand } from "./AcceptFriendRequestCommand";
@@ -13,13 +12,12 @@ export enum FriendRequestError {
 	FRIEND_NOT = "NotFriend"
 }
 
-@CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
+@CommandManager.register(UserManager, FriendManager)
 export class RequestFriendCommand extends CommandBase {
 
 	constructor(
 		private userManager: UserManager,
-		private friendManager: FriendManager,
-		private messageManager: MessagesQueueManager
+		private friendManager: FriendManager
 	) { super() }
 
 	execute(sender_id: user_id, receiver_id: user_id): CommandResult {
@@ -34,7 +32,7 @@ export class RequestFriendCommand extends CommandBase {
 		if (senderNode.friends.has(receiver_id))
 			return { success: false, errors: [FriendRequestError.FRIEND_ALREADY] };
 		if (senderNode.outgoingRequests.has(receiver_id))
-			return { success: false, errors: [FriendRequestError.FRIEND_ALREADY] }; // should not happen either if client isn't fraudulent 
+			return { success: false, errors: [FriendRequestError.FRIEND_ALREADY] }; // should not happen if client isn't fraudulent 
 
 		if (senderNode.incomingRequests.has(receiver_id)) {
 			return CommandManager.get(AcceptFriendRequestCommand).execute(sender_id, receiver_id);
@@ -45,10 +43,6 @@ export class RequestFriendCommand extends CommandBase {
 			receiver_id: receiver_id,
 			status: FriendRequestStatus.PENDING,
 		});
-
-		if (this.userManager.hasCached(receiver_id)) {
-			this.messageManager.push(receiver_id, { type: MessagesTypes.FRIENDREQUEST_RECEIVED, data: { from: sender.name } })
-		}
 
 		return { success: true, errors: [] };
 	}

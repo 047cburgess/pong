@@ -66,7 +66,7 @@ export function initUserSelect(containerId: string, maxUserId: number = 5) {
 	select.addEventListener('change', async () => {
 		const userId = Number(select.value);
 		if (!userId) return;
-		await loadUserData(userId);
+		await loadUserData(userId, true);
 	});
 
 	select.value = '1';

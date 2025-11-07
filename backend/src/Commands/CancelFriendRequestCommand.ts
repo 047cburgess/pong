@@ -1,15 +1,13 @@
 import { FriendManager, FriendRequestStatus } from "../Managers/FriendManager";
-import { MessagesQueueManager, MessagesTypes } from "../Managers/MessagesQueueManager";
 import { UserManager, user_id } from "../Managers/UserManager";
 import { CommandBase, CommandManager, CommandResult } from "../Managers/CommandManager";
 import { FriendRequestError } from "./RequestFriendCommand";
 
-@CommandManager.register(UserManager, FriendManager, MessagesQueueManager)
+@CommandManager.register(UserManager, FriendManager)
 export class CancelFriendRequestCommand extends CommandBase {
 	constructor(
 		private userManager: UserManager,
 		private friendManager: FriendManager,
-		private messagesManager: MessagesQueueManager
 	) { super() }
 
 	execute(sender_id: user_id, receiver_id: user_id): CommandResult {
@@ -22,10 +20,7 @@ export class CancelFriendRequestCommand extends CommandBase {
 			return { success: false, errors: [FriendRequestError.FRIEND_ALREADY] };
 		if (!senderNode.outgoingRequests.has(receiver_id))
 			return { success: false, errors: [FriendRequestError.REQUEST_UNDEFINED] };
-		
-		if (this.userManager.hasCached(receiver_id))
-			this.messagesManager.push(receiver_id, { type: MessagesTypes.FRIENDREQUEST_CANCELED, data: { name: sender.name } });
-		
+
 		this.friendManager.upsertUpdate({
 			sender_id: sender_id,
 			receiver_id: receiver_id,
