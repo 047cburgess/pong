@@ -1,6 +1,21 @@
 services:
+  game-service:
+    build: ./backend/game_service
+    container_name: game-service
+    volumes:
+      - ./backend/game_service:/app
+      - /app/node_modules
+    ports:
+      - "3001:3000"
+    command: npm run dev
+    networks:
+      - transcendence
+    environment:
+      - LISTEN_PORT=3000
+
   matchmaking-service:
     build: ./backend/matchmaking_service
+    container_name: matchmaking-service
     volumes:
       - ./backend/matchmaking_service:/app
       - /app/node_modules
@@ -18,6 +33,8 @@ services:
       - GAME_SERVICE_URL=${GAME_SERVICE_URL}
       - SERVICE_URL=${MATCHMAKING_SERVICE_URL}
     command: npm run dev
+    depends_on:
+      - game-service
 
   grafana:
     image: grafana/grafana
@@ -32,6 +49,8 @@ services:
       - GF_SERVER_ROOT_URL=http://localhost:3004/
       - GF_SECURITY_ADMIN_USER=admin1
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_LOG_LEVEL=debug
+
   prometheus:
     image: prom/prometheus
     container_name: prometheus
