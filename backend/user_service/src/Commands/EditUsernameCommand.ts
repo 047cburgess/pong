@@ -25,7 +25,7 @@ export class EditUsernameCommand extends CommandBase {
 
 	private readonly VALID_USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 	private readonly USERNAME_MIN_LEN = 3;
-	private readonly USERNAME_MAX_LEN = 20;
+	private readonly USERNAME_MAX_LEN = 32;
 
 	constructor(
 		private userManager: UserManager,
