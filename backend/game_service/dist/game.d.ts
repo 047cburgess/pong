@@ -3,6 +3,7 @@ import { z } from 'zod';
 export declare const gamePropertiesSchema: z.ZodObject<{
     nPlayers: z.ZodInt;
     coop: z.ZodDefault<z.ZodBoolean>;
+    isTournament: z.ZodDefault<z.ZodBoolean>;
     ballSpeed: z.ZodDefault<z.ZodNumber>;
     paddleSize: z.ZodDefault<z.ZodNumber>;
     paddleSpeed: z.ZodDefault<z.ZodNumber>;

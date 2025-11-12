@@ -131,6 +131,8 @@ fastify.register(websocketPlugin);
     // TODO: NEED TO AMEND SOME HOW TO FORCE A GAME RESULT FOR TOURNAMENT -> maybe just make the next goal the winner
     const gameId = randomUUID();
     const hookUrl = (req.body as any)?.hook?.replace('GAME_ID', gameId);
+    gameParams.isTournament = true; // ADDED
+    fastify.log.debug(`GameParams.isTournament = ${gameParams.isTournament}`);
     const game = new Game(gameId, gameParams, hookUrl);
     games.set(gameId, game);
 

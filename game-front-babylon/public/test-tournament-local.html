@@ -221,7 +221,7 @@ function updateBracket() {
 
 async function startNextGame() {
   try {
-    const response = await fetch(`${GAME_SERVICE_URL}/internal/games/classic/create`, {
+    const response = await fetch(`${GAME_SERVICE_URL}/internal/games/tournament/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nPlayers: 2 })

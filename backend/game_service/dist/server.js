@@ -111,6 +111,8 @@ fastify.post('/internal/games/tournament/create', async (req, resp) => {
     // TODO: NEED TO AMEND SOME HOW TO FORCE A GAME RESULT FOR TOURNAMENT -> maybe just make the next goal the winner
     const gameId = randomUUID();
     const hookUrl = req.body?.hook?.replace('GAME_ID', gameId);
+    gameParams.isTournament = true; // ADDED
+    fastify.log.debug(`GameParams.isTournament = ${gameParams.isTournament}`);
     const game = new Game(gameId, gameParams, hookUrl);
     games.set(gameId, game);
     // BUILD THE RESPONSE GAME KEYS

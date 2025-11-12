@@ -18,6 +18,7 @@ const TICK_MS = 20;
 export const gamePropertiesSchema = z.object({
   nPlayers: z.int().gte(2).lte(4),
   coop: z.boolean().default(false),
+  isTournament: z.boolean().default(false), // ADDED
   ballSpeed: z.number().gte(16).lte(160).default(130),
   paddleSize: z.number().gte(4000).lte(60000).default(17000),
   paddleSpeed: z.number().gte(40).lte(500).default(320),
@@ -26,7 +27,7 @@ export const gamePropertiesSchema = z.object({
   timeLimitMs: z.int()
     .multipleOf(1000)
     .gte(15_000).lte(30 * 60_000)
-    .default(2 * 60_000),
+    .default(0.25 * 60_000),
   startingHealth: z.int().positive().optional(),
   pointsTarget: z.int().positive().optional().default(7),
   fieldSize: z.literal(FIELD_SIZE).default(FIELD_SIZE),
@@ -191,8 +192,6 @@ export class Game {
 
   // CHECKING IF ALL PLAYERS ARE READY -- TBD HOW TO MESSAGE RECONNECTIONS ETC
   playerReady(pid: PlayerId) {
-	// check that they are connected in players socket map
-	
 	// add to ready players
 	this.readyPlayers.add(pid);
 	  // broadcast the player is ready and num players ready
@@ -263,7 +262,7 @@ export class Game {
     const update = { type: 'state', state: this.state, pid: -1 };
     Array.from(this.players.values()).forEach((p) => {
 	    if (p.isViewer) {
-		    this.sendTo(p, JSON.stringify({ type: 'state', state: this.state, pid: -1}));
+		    this.sendTo(p, JSON.stringify(update));
 	    } else {
       		assert(typeof this.playerSides.get(p.id) === 'number')
       		update.pid = this.playerSides.get(p.id) as number;
@@ -407,6 +406,7 @@ export class Game {
     state.pos = npos;
   }
 
+  // TODO: if game ended but this.params.isTournament === true, need to force a winner
   checkGameEnd() {
     let out = 0;
     let bestScore = 0;
@@ -419,12 +419,32 @@ export class Game {
     const scoreTarget = this.params.pointsTarget ?? Infinity;
     assert(this.gameStart);
     const timeRem = this.params.timeLimitMs - this.state.time;
-    if (out + 1 >= this.params.nPlayers
-      || bestScore >= scoreTarget
-      || timeRem <= 0
-    ) {
-      this.endGame();
+
+    // Classic games can be draws
+    if (!this.params.isTournament) {
+    	if (out + 1 >= this.params.nPlayers
+    	  || bestScore >= scoreTarget
+    	  || (timeRem <= 0) 
+    	) {
+		console.log('classic game, endint it');
+    	  this.endGame();
+    	}
+    } else {
+	    const p1Score = this.state.players[0]?.score;
+	    const p2Score = this.state.players[1]?.score;
+	    // bestScore >= scoreTarget
+	    if ((bestScore >= scoreTarget) && (p1Score != p2Score)) {
+		    console.log('best score is bigger than target and they arent the same so ending');
+		    this.endGame();
+		    return ;
+	    }
+	    if ((timeRem <= 0) && (p1Score != p2Score)) {
+		    console.log('no time left and scores are not the same so ending');
+		    this.endGame();
+		    return ;
+	    }
     }
+
   }
 
   async endGame() {
