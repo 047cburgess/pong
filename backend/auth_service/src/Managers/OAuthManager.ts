@@ -105,6 +105,7 @@ export class OAuthManager {
 				`GitHub: ${data.error_description || data.error || 'Inconnu'}`
 			);
 		}
+		
 		return { accessToken: data.access_token };
 	}
 

@@ -12,8 +12,10 @@ export const JwtCookieChecker: onRequestAsyncHookHandler = async (request, reply
 	const token = request.cookies?.jwt;
 	if (token) {
 		const payload = JWTManager.getInstance().verifyJWT(token);
-		if (payload)
+		if (payload){
 			request.headers['x-user-id'] = (payload.sub as string);
+			return;
+		}
 		else
 			return reply.status(401).send("INVALID_JWT");
 	}

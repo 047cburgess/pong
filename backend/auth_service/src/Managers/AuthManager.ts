@@ -26,6 +26,7 @@ export class AuthManager {
 		}
 		return AuthManager._instance;
 	}
+	
 	//credential is either mail or username
 	async login(credential: string, password: string): Promise<string> {
 
@@ -39,11 +40,12 @@ export class AuthManager {
 		}
 
 		if (user.TwoFA) {
-			this.twoFA.prepareMailData(user.id, user.email);
+			const token = this.twoFA.generateAndStoreCode(user.id);
+			this.twoFA.prepareMailData(token, user.email);
 			
 			//send mail
 
-			throw new TwoFactorRequiredError(this.twoFA.generateAndStoreCode(user.id).toString());
+			throw new TwoFactorRequiredError(token.toString());
 		}
 		const jwt = this.jwt_manager.generateJWT(user.id);
 		return jwt;

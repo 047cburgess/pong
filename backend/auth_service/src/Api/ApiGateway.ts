@@ -1,11 +1,7 @@
 import fastifyHttpProxy from '@fastify/http-proxy'
-import { FastifyInstance, onRequestAsyncHookHandler } from "fastify"
+import { FastifyInstance } from "fastify"
 import fastifyCookie from "@fastify/cookie";
-import { JWTManager } from '../Managers/JWTManager';
 import { JwtCookieChecker } from './Hanlders';
-
-
-
 
 export async function apiGateway(server: FastifyInstance) {
 

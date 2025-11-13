@@ -64,8 +64,8 @@ export class TwoFAManager {
 
 	public testCodeValidity(token: number, userCode: string): number {
 		const entry = this.activeCodes.get(token);
-		if (!entry) { throw new Error("INVALIDTwoFA_TOKEN"); }
-		if (entry.code !== userCode) { throw new Error("INVALIDTwoFA_CODE"); }
+		if (!entry) { throw new Error("INVALID2FA_TOKEN"); }
+		if (entry.code !== userCode) { throw new Error("INVALID2FA_CODE"); }
 		const user_id = entry.id;
 
 		clearTimeout(entry.timeoutId);
