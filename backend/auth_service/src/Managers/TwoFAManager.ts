@@ -1,6 +1,7 @@
 import { setTimeout, clearTimeout } from 'timers';
 import * as crypto from 'crypto';
 import { IdUtils } from '../Utils/IdUtils';
+import nodemailer from 'nodemailer';
 
 interface CodeEntry {
 	id: number,
@@ -12,10 +13,22 @@ export class TwoFAManager {
 	private static _instance: TwoFAManager;
 	private activeCodes: Map<number, CodeEntry> = new Map();
 	private activeTimeouts: Set<NodeJS.Timeout> = new Set();
+	private transporter: nodemailer.Transporter;
 
 	private readonly CODE_VALIDITY_MS = 5 * 60 * 1000;
 
-	constructor() { }
+	constructor() { 
+		//ADD
+		this.transporter = nodemailer.createTransport({
+			host: process.env.SMTP_HOST,
+			port: parseInt(process.env.SMTP_PORT || '587'),
+			secure: process.env.SMTP_PORT === '465',
+			auth: {
+				user: process.env.SMTP_USER,
+				pass: process.env.SMTP_PASSWORD,
+			},
+		});
+	}
 
 	public static getInstance(): TwoFAManager {
 		if (!TwoFAManager._instance) {
@@ -116,6 +129,28 @@ export class TwoFAManager {
 			subject: subject,
 			htmlBody: htmlBody
 		};
+	}
+
+	public async sendMail(token: number, recipientEmail: string): Promise<void> {
+		const mailData = this.prepareMailData(token, recipientEmail);
+
+		if (!mailData) {
+			throw new Error("Cannot send mail: Invalid token of code expired."); // TODO: the integrated error handler
+		}
+
+		try {
+			await this.transporter.sendMail({
+				from: process.env.SMTP_FROM || '"No Reply" <noreply@ft_transcendence.com>',
+				to: mailData.to,
+				subject: mailData.subject,
+				html: mailData.htmlBody,
+			});
+
+			console.log(`2FA mail sent successfully to ${recipientEmail}`);
+		} catch (error) {
+			console.error("Failed to send 2FA email:", error);
+			throw new Error("Failed to send 2FA email. Please try again.");
+		}
 	}
 
 	public closeAllIntervals(): void {

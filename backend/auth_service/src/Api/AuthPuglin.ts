@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { AuthManager } from "../Managers/AuthManager";
 import { TwoFAManager } from "../Managers/TwoFAManager";
 import { authErrorHandler, JwtCookieChecker } from "./Hanlders";
+import fastifyCookie from "@fastify/cookie";
 import { OAuthManager } from "../Managers/OAuthManager";
 import { ApiError } from "../Errors/ApiError";
 import { TwoFactorRequiredError } from "../Errors/TwoFactorRequiredError";
@@ -35,7 +36,7 @@ export const registerBodySchema = {
 		username: { type: "string" },
 		email: { type: "string" },
 		password: { type: "string" },
-		TwoFA: { type: "boolean" }
+		TwoFA: { type: "number" }
 	},
 }
 
@@ -50,9 +51,8 @@ export const loginBodySchema = {
 
 export const login2FABodySchema = {
 	type: "object",
-	required: ["token", "code"],
+	required: ["code"],
 	properties: {
-		token: { type: "string" },
 		code: { type: "string" }
 	},
 };
@@ -62,15 +62,17 @@ export interface RegisterBody {
 	username: string,
 	email: string,
 	password: string,
-	TwoFA?: boolean
+	TwoFA?: number   // amend for sqlite as doesnt take bools
 }
 
 export async function AuthPlugin(server: FastifyInstance) {
+	await server.register(fastifyCookie); // ADD
 
 
 	server.setErrorHandler(authErrorHandler);
 
 	server.post<{ Body: RegisterBody }>("/user/register", { schema: { body: registerBodySchema } }, async (request, reply) => {
+
 		const token = await AuthManager.getInstance().register((request.body as RegisterBody));
 		reply.setCookie("jwt", token, {
 			path: "/",
@@ -84,7 +86,7 @@ export async function AuthPlugin(server: FastifyInstance) {
 
 	server.post<{ Body: LoginBody }>("/user/login", { schema: { body: loginBodySchema } }, async (request, reply) => {
 		const { username, password } = request.body;
-
+		
 		const jwt = await AuthManager.getInstance().login(username, password);
 		reply.setCookie("jwt", jwt, {
 			path: "/",
@@ -128,7 +130,7 @@ export async function AuthPlugin(server: FastifyInstance) {
 			path: "/user/oauth/github/callback",
 			httpOnly: true,
 			sameSite: "lax",
-			secure: "auto",
+			secure: false, //"auto" temp to false as browser doesnt like it
 			maxAge: 60 * 5 
 		});
 		return reply.status(200).send({ redirectUrl: url });
@@ -157,7 +159,7 @@ export async function AuthPlugin(server: FastifyInstance) {
 			path: "/",
 			httpOnly: true,
 			sameSite: "strict",
-			secure: "auto",
+			secure: false, //"auto" temp to false as browser doesn't like it
 			maxAge: 60 * 60 * 24 * 7
 		});
 		return reply.status(204).send();

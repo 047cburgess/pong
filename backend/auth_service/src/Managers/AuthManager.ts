@@ -30,6 +30,7 @@ export class AuthManager {
 	//credential is either mail or username
 	async login(credential: string, password: string): Promise<string> {
 
+		
 		const user = this.db.getUserByCredential(credential);
 
 		if (!user) {
@@ -41,9 +42,10 @@ export class AuthManager {
 
 		if (user.TwoFA) {
 			const token = this.twoFA.generateAndStoreCode(user.id);
-			this.twoFA.prepareMailData(token, user.email);
+			//this.twoFA.prepareMailData(token, user.email);
 			
-			//send mail
+			//send mail: ADDED -> uses prepare mail data inside
+			await this.twoFA.sendMail(token, user.email);
 
 			throw new TwoFactorRequiredError(token.toString());
 		}
@@ -81,7 +83,7 @@ export class AuthManager {
 			username: credentialsInfo.username,
 			email: credentialsInfo.email,
 			password: await PasswordUtils.hash(credentialsInfo.password),
-			TwoFA: credentialsInfo.TwoFA || false
+			TwoFA: credentialsInfo.TwoFA || 0
 		};
 		this.trySaveCredentials(credentials);
 

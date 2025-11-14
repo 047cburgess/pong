@@ -1,10 +1,21 @@
 import fastify from "fastify";
+import cors from '@fastify/cors';
 import { apiGateway } from "./Api/ApiGateway";
 import { AuthPlugin } from "./Api/AuthPuglin";
+
 
 let isInitialized = false;
 let clearIntervalHandle: NodeJS.Timeout | null = null;
 const server = createServer();
+
+// Added for cors
+server.register(cors, {
+	origin: (_origin, cb) => {
+		cb(null, true);
+	},
+	credentials: true,
+	methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
+});
 
 export function initializeApp() {
 	if (isInitialized) return;
@@ -16,33 +27,46 @@ export function initializeApp() {
 
 export function createServer() {
 	initializeApp();
-	const server = fastify({ logger: false });
+	const server = fastify({
+		logger: {
+			level: 'debug',
+    			transport: {
+    			    target: 'pino-pretty',
+    			    options: {
+    			      translateTime: "SYS:HH:MM:ss Z",
+    			      ignore: 'pid,hostname',
+    			      colorize: true
+			    }
+    			}
+		}
+	});
+
 
 	server.register(AuthPlugin);
 	server.register(apiGateway);
 
 	server.addHook('onReady', () => {
-		console.log('Server ready');
+		server.log.info('Server ready');
 	});
 
 	return server;
 }
 
 async function gracefulShutdown(server: any) {
-	console.log("\n🛑 Shutting down server...");
+	server.log.info("\n🛑 Shutting down server...");
 
 	try {
 		await server.close();
-		console.log("✅ Fastify server closed");
+		server.log.info("✅ Fastify server closed");
 	} catch (err) {
-		console.error("⚠️ Error closing Fastify server:", err);
+		server.log.error("⚠️ Error closing Fastify server:", err);
 	}
 
 	process.exit(0);
 }
 
 server.listen({ port: 3000, host: "0.0.0.0" })
-	.then(() => console.log("✅ Serveur prêt sur http://localhost:3000"))
+	.then(() => server.log.info("✅ Serveur prêt sur http://localhost:3000"))
 	.catch(console.error);
 
 process.on("SIGINT", () => gracefulShutdown(server));

@@ -61,11 +61,11 @@ export class DbManager {
         		LIMIT 1
 			`),
 			saveCredentials: this.db.prepare(`
-                INSERT INTO users (id, username, email, password_hash, TwoFA)
+                INSERT INTO users (id, username, email, password, TwoFA)
                 VALUES (@id, @username, @email, @password, @TwoFA)
             `),
 			getUserByOAuthId: this.db.prepare(`
-				SELECT * FROM oauth_users WHERE externalId = @externalId AND provider = @OauthProvider
+				SELECT * FROM oauth_users WHERE externalId = @externalId AND OauthProvider = @OauthProvider
 			`),
 			saveOAuthCredentials: this.db.prepare(`
 				INSERT INTO oauth_users (id, OauthProvider, externalId, email, TwoFA)

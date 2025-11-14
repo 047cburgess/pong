@@ -10,7 +10,7 @@ export interface CredentialsInfo {
 	email : string, //required for 2FA
 	username : string,
 	password : string, //hashed
-	TwoFA? : boolean
+	TwoFA? : number // change to number as sqlite no like boolean
 } 
 
 export interface OauthCredentialsInfo {
@@ -18,6 +18,6 @@ export interface OauthCredentialsInfo {
 	OauthProvider : string,
 	externalId : string,
 	email : string,
-	TwoFA : boolean
+	TwoFA : number
 }
 

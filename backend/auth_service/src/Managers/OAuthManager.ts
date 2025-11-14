@@ -41,7 +41,7 @@ export class OAuthManager {
 		}
 		this.GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 		this.GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-		this.GITHUB_REDIRECT_URI = "/user/oauth/github/callback";
+		this.GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI!;
 	}
 
 	public static getInstance(): OAuthManager {
@@ -74,6 +74,7 @@ export class OAuthManager {
 	}
 
 	public async handleCallback(code: string, receivedState: string, expectedState: string): Promise<{ accessToken: string }> {
+		console.log(`received state: ${receivedState}, expected state: ${expectedState}`);
 		if (receivedState !== expectedState || !expectedState) {
 			throw ApiError.Forbidden(
 				"CSRF_ATTACK_SUSPECTED",
@@ -132,7 +133,7 @@ export class OAuthManager {
 				OauthProvider: "github",
 				email: userProfile.email,
 				externalId: userProfile.id.toString(),
-				TwoFA: false
+				TwoFA: 0
 			};
 			localUserId = credentials.id
 			db.saveOAuthCredentials(credentials);
