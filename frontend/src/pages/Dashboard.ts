@@ -18,7 +18,7 @@ const TILE_STYLES: string
   = "outline-0 rounded-xl outline-neutral-700 p-4";
 
 export default class DashboardPage extends Page {
-  username: string;
+  readonly username: string;
 
   friendState?:
     "self" | "friend" | "outgoing" | "incoming" | null;
@@ -55,6 +55,7 @@ export default class DashboardPage extends Page {
     ];
     const sideRight = [
       this.matchHistoryTile().class(TILE_STYLES),
+      // TODO(Vaiva): Last tournament
     ];
 
     delete this.tiles;
@@ -66,12 +67,12 @@ export default class DashboardPage extends Page {
       }
     }
 
-    return [new Div([
-      new Div(sideLeft)
+    return [new Div(
+      new Div(...sideLeft)
         .class("flex flex-col grow lg:max-w-100 gap-2 md:gap-4"),
-      new Div(sideRight)
+      new Div(...sideRight)
         .class("col-span-2 flex flex-col grow lg:max-w-200 gap-2 md:gap-4"),
-    ]).class("gap-2 flex flex-col p-12 min-w-120 max-w-300")
+    ).class("gap-2 flex flex-col p-12 min-w-120 max-w-300")
       .class("md:grid md:grid-cols-3 ml-auto mr-auto md:gap-4"),
     ];
   }
@@ -90,16 +91,16 @@ export default class DashboardPage extends Page {
 
     const interactButtons: AElement[] = this.interactButtons();
 
-    return new Div([
+    return new Div(
       new Div(
         this.userInfo?.avatarUrl
-          ? [new Image(this.userInfo.avatarUrl)]
-          : [new Paragraph("nothing to see here").class("self-center")]
+          ? new Image(this.userInfo.avatarUrl)
+          : new Paragraph("nothing to see here").class("self-center")
       ).class("text-zinc-700/10 bg-zinc-800 mb-4 col-span-2")
         .class(AVATAR_DIV),
-      new Div([
+      new Div(
         new Paragraph(this.username).class("font-bold"),
-      ]).class("flex flex-row gap-2 text-3xl mb-4 col-span-2"),
+      ).class("flex flex-row gap-2 text-3xl mb-4 col-span-2"),
       ...interactButtons,
       onlineStatus,
       new Paragraph("Member since:"),
@@ -113,8 +114,7 @@ export default class DashboardPage extends Page {
         .class("text-right font-bold self-end"),
       new Paragraph("Rank:"),
       new Paragraph("Gamer").class("text-right font-bold self-end"),
-      // new Div(),
-    ])
+    )
       .class("grid grid-cols-2")
       .withId("tile-user-info") as Div;
   }
@@ -122,10 +122,9 @@ export default class DashboardPage extends Page {
   friendsTile(): Div {
     const friendCard = (info: UserInfo, index: number): AElement => {
       const elems = [
-        new Div(
-          info.avatarUrl
-            ? [new Image(info.avatarUrl)]
-            : []
+        (info.avatarUrl
+          ? new Div(new Image(info.avatarUrl))
+          : new Div()
         ).class("w-8 bg-cyan-200")
           .class(AVATAR_DIV),
         new Div().class("h-3 w-3 rounded-full -ml-6.75 mt-4.5 outline-2 outline-neutral-900"),
@@ -136,7 +135,7 @@ export default class DashboardPage extends Page {
       } else {
         elems[1].class("bg-neutral-400");
       }
-      const res = new Div(elems)
+      const res = new Div(...elems)
         .class("transition duration-150 ease-in-out flex flex-row gap-4 hover:bg-zinc-800 rounded-xl")
         .withId(`friend-${index}`)
         .withOnclick(() => this.router.navigate(`/dashboard?user=${info.username}`));
@@ -156,7 +155,7 @@ export default class DashboardPage extends Page {
             new Paragraph("•••").class("self-center font-bold text-neutral-700"),
           ];
           elems[1].class("bg-neutral-400/10");
-          const res = new Div(elems)
+          const res = new Div(...elems)
             .class("transition duration-150 ease-in-out flex flex-row gap-4 hover:bg-zinc-800 rounded-xl");
           return res;
         })());
@@ -165,15 +164,17 @@ export default class DashboardPage extends Page {
       flist = [new Paragraph("No frens found :(").class(MUTED_TEXT)];
     }
 
-    const friendsTitle = new Div([new Paragraph("Friends →"), new Paragraph(`${this.friends?.length ?? "..."}`)])
-      .class("flex justify-between font-bold text-xl mb-2")
+    const friendsTitle = new Div(
+      new Paragraph("Friends →"),
+      new Paragraph(`${this.friends?.length ?? "..."}`)
+    ).class("flex justify-between font-bold text-xl mb-2")
       .withId("friends-list-title")
       .withOnclick(() => this.router.navigate("/friends" + location.search));
 
-    return new Div([
+    return new Div(
       friendsTitle,
       ...flist,
-    ]).class("flex flex-col gap-2 select-none")
+    ).class("flex flex-col gap-2 select-none")
       .withId("tile-friends") as Div;
   }
 
@@ -181,10 +182,18 @@ export default class DashboardPage extends Page {
     const cards = [];
     if (!this.recentGames) {
       for (let i = 0; i < 5; i++) {
-        cards.push(new GameCardLarge(undefined));
+        const c = new GameCardBase() as Div;
+        c.contents = [new Paragraph("Loading...")
+          .class("self-center")
+        ];
+        c.class("outline-neutral-800 text-neutral-700 text-xl font-bold");
+        cards.push(c);
       };
-    } else if (this.recentGames.length) {
-      cards.push(new GameCardLarge(null));
+    } else if (this.recentGames.length === 0) {
+      const c = new GameCardBase() as Div;
+      c.contents = [new Paragraph("No recent games").class("self-center").class(MUTED_TEXT)];
+      c.class("outline-neutral-700 bg-zinc-800/75 text-xl font-bold");
+      cards.push(c);
     } else {
       for (let i = 0; i < Math.min(5, this.recentGames.length); i++) {
         const gg = this.recentGames[i];
@@ -196,7 +205,7 @@ export default class DashboardPage extends Page {
       }
     }
     for (const c of cards) {
-      c.class("h-26");
+      c.class("h-32");
     }
 
     const navGameHistory = () => {
@@ -206,27 +215,32 @@ export default class DashboardPage extends Page {
       .class("select-none")
       .withOnclick(navGameHistory)
       .withId("match-history") as Paragraph;
-    const seeAll = new GameCardBase(null)
-      .class("justify-center hover:bg-zinc-600/50 h-10")
-      .withId("see-all-btn")
-      .withOnclick(navGameHistory);
 
-    (seeAll as Div).contents
-      = [new Paragraph("See all").class("self-center font-bold")];
+    let seeAll: AElement = new Inline();
+    if (this.recentGames?.length !== 0) {
+      seeAll = new GameCardBase()
+        .class(DEFAULT_BUTTON)
+        .class(HOW_TO_CENTER_A_DIV)
+        .class("h-10")
+        .withOnclick(navGameHistory)
+        .withId("see-all-btn");
+      (seeAll as Div).contents
+        = [new Paragraph("See all").class("self-center font-bold")];
+    }
 
-    let stats = new Div([
+    let stats = new Div(
       new Paragraph(`Wins: <span class="text-white">${this.stats?.lifetime.wins ?? ".."}</span>`),
       new Paragraph(`Draws: <span class="text-white">${this.stats?.lifetime.losses ?? ".."}</span>`),
       new Paragraph(`Losses: <span class="text-white">${this.stats?.lifetime.draws ?? ".."}</span>`),
-    ]);
-    return new Div([
-      new Div([
+    );
+    return new Div(
+      new Div(
         historyTitle,
         stats.class("hidden md:flex flex-row justify-end gap-4 text-neutral-500"),
-      ]).class("flex flex-row gap-4 justify-between font-bold text-xl mb-2"),
+      ).class("flex flex-row gap-4 justify-between font-bold text-xl mb-2"),
       ...cards,
       seeAll
-    ]).class("flex flex-col gap-2 md:gap-4")
+    ).class("flex flex-col gap-2 md:gap-4")
       .withId("tile-match-history") as Div;
   }
 
@@ -241,58 +255,11 @@ export default class DashboardPage extends Page {
     if (this.username !== APP.userInfo?.username) {
       path = `/users/${this.username}`;
     }
-
-    const thenJson =
-      (x: Promise<Response>) => x.then(async r => await r.json()).catch();
-
-    Promise.all([
-      API.fetch(path),
-      thenJson(API.fetch(`${path}/friends`)),
-      thenJson(API.fetch(`${path}/stats`))
-    ]).then(async ([resp, friends, stats]) => {
-      if (resp.status === 401) {
-        APP.onLogout();
-        this.router.navigate("/login");
-        return;
-      }
-      if (!resp.ok || resp.status !== 304 || !friends || !stats) {
-        this.router.navigate(404, false);
-        return;
-      }
-
-      this.userInfo = await resp.json() as
-        ApiPaths["/users/{username}"]["get"]["responses"]["200"]["content"]["application/json"];
-      this.friends = friends as
-        ApiPaths["/users/{username}/friends"]["get"]["responses"]["200"]["content"]["application/json"];
-      this.stats = stats as
-        ApiPaths["/users/{username}/stats"]["get"]["responses"]["200"]["content"]["application/json"];
-
-      this.userInfoTile().redrawInner();
-      this.friendsTile().redrawInner();
-
-      const ids = new Set(this.stats.recentMatches
-        .flatMap(x => x.players)
-        .map(x => x.id));
-      let proms = [];
-      const userInfos: Map<number | string, UserInfo> = new Map();
-      for (const id of ids) {
-        proms.push(userFromMaybeId(id).then(info => userInfos.set(id, info)));
-      }
-      await Promise.all(proms);
-
-      this.recentGames = this.stats.recentMatches.map(g => {
-        (g as GameResultExt).playerInfos
-          = g.players.map(p => userInfos.get(p.id)) as UserInfo[];
-        (g as GameResultExt).thisUser = this.userInfo?.id;
-        return g as GameResultExt;
-      })
-
-      this.matchHistoryTile().redrawInner();
-    }).catch(console.error);
   }
 
   interactButtons(): AElement[] {
-    // TODO(Vaiva)
+    // TODO(Vaiva): Dashboard page buttons
+
     const styles = "flex gap-2 font-bold p-1 pl-4 pr-4 -mt-1 mb-3";
 
     let buttons: AElement[] = [];
@@ -301,31 +268,27 @@ export default class DashboardPage extends Page {
       case null:
       case "incoming":
         buttons = [
-          new Div([
+          new Div(
             new Inline(ICON_ADD_FRIEND).class("self-center"),
             new Paragraph("Add friend").class("self-center"),
-          ]).class("grow")
+          ).class("grow")
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
-            .withOnclick(() => { /* TODO */ })
             .withId("add-friend-btn"),
-          new Div([
-            new Inline(ICON_CROSSED_SWORDS).class("self-center"),
-          ])
+          new Div(new Inline(ICON_CROSSED_SWORDS).class("self-center"))
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
-            .withOnclick(() => { /* TODO */ })
             .withId("invite-to-play-btn")
         ];
         break;
       case "self":
         buttons = [
-          new Div([
-            // TODO(Vaiva): setting button icon?
+          new Div(
+            // todo: setting button icon
             new Paragraph("Edit profile").class("self-center"),
-          ]).class("grow")
+          ).class("grow")
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
@@ -335,49 +298,42 @@ export default class DashboardPage extends Page {
         break;
       case "outgoing":
         buttons = [
-          new Div([
+          new Div(
             new Inline(ICON_FRIEND_ADDED).class("self-center"),
             new Paragraph("Request sent").class("self-center"),
-          ]).class("grow")
+          ).class("grow")
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
-            .withOnclick(() => { /* TODO */ })
             .withId("cancel-friend-req-btn"),
-          new Div([
-            new Inline(ICON_CROSSED_SWORDS).class("self-center"),
-          ])
+          new Div(new Inline(ICON_CROSSED_SWORDS).class("self-center"))
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
-            .withOnclick(() => { /* TODO */ })
             .withId("invite-to-play-btn")
         ];
         break;
+      case undefined:
       case "friend":
         buttons = [
-          new Div([
+          new Div(
             new Inline(ICON_CROSSED_SWORDS).class("self-center"),
             new Paragraph("Invite to play").class("self-center"),
-          ]).class("grow")
+          ).class("grow")
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
-            .withOnclick(() => { /* TODO */ })
             .withId("invite-to-play-btn"),
-          new Div([
-            new Inline(ICON_FRIEND_ADDED).class("self-center"),
-          ])
+          new Div(new Inline(ICON_FRIEND_ADDED).class("self-center"))
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
-            .withOnclick(() => { /* TODO */ })
             .withId("remove-friend-btn"),
         ];
         break;
     }
 
-    return [new Div(buttons).class("col-span-2 flex gap-4")];
+    return [new Div(...buttons).class("col-span-2 flex gap-4")];
   }
 
   transitionIn(): null | void {
@@ -399,5 +355,71 @@ export default class DashboardPage extends Page {
         t.byId()?.classList.add(...TILE_ANIM_KEY2);
       });
     }));
+  }
+
+  async loadData(): Promise<void> {
+    let path = "/user";
+    if (this.username === APP.userInfo?.username) {
+      path = `/users/${this.username}`;
+    }
+
+    const thenJson =
+      (x: Promise<Response>) => x.then(async r => await r.json())
+        .catch(console.error);
+
+    const [resp, friends, stats] = await Promise.all([
+      API.fetch(path),
+      thenJson(API.fetch(`${path}/friends`)),
+      thenJson(API.fetch(`${path}/stats`))
+    ]);
+
+    if (resp.status === 401) {
+      APP.onLogout();
+      this.router.navigate("/login");
+      return;
+    }
+    if (!resp.ok && resp.status !== 304) {
+      this.router.navigate(404, false);
+      return;
+    }
+    if (!friends || !stats) {
+      return;
+    }
+
+    const userInfo = await resp.json().catch(console.error) as
+      void | ApiPaths["/users/{username}"]["get"]["responses"]["200"]["content"]["application/json"];
+    if (!userInfo) {
+      return;
+    }
+    this.userInfo = userInfo;
+    this.friends = friends as
+      ApiPaths["/users/{username}/friends"]["get"]["responses"]["200"]["content"]["application/json"];
+    this.stats = stats as
+      ApiPaths["/users/{username}/stats"]["get"]["responses"]["200"]["content"]["application/json"];
+
+    const ids = new Set(this.stats.recentMatches
+      .flatMap(x => x.players)
+      .map(x => x.id));
+    let proms = [];
+    const userInfos: Map<number | string, UserInfo> = new Map();
+    for (const id of ids) {
+      proms.push(userFromMaybeId(id).then(info => userInfos.set(id, info)));
+    }
+    await Promise.all(proms);
+
+    this.recentGames = this.stats.recentMatches.map(g => {
+      (g as GameResultExt).playerInfos
+        = g.players.map(p => userInfos.get(p.id)) as UserInfo[];
+      (g as GameResultExt).thisUser = this.userInfo?.id;
+      return g as GameResultExt;
+    });
+
+    if (this.router.currentPage !== this) {
+      return;
+    }
+
+    this.userInfoTile().redrawInner();
+    this.friendsTile().redrawInner();
+    this.matchHistoryTile().redrawInner();
   }
 };

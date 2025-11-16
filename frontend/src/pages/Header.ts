@@ -1,19 +1,19 @@
 import { SelfInfo } from "../Api";
 import Router, { Page } from "../Router";
 import { HOW_TO_CENTER_A_DIV } from "./elements/CssUtils";
-import { AElement, Div, Image, Paragraph } from "./elements/Elements";
+import { AElement, Button, Div, Image, Paragraph } from "./elements/Elements";
+import { ICON_QUIT } from "./elements/SvgIcons";
 
 const makeButton = (text: string, id: string, link: string): { elem: AElement, link: string } => {
   return {
-    elem: new Paragraph(text).withId(id)
-      .class("self-center p-2 -m-2"),
+    elem: new Button(new Paragraph(text).class("self-center p-2 -m-2"))
+      .withId(id),
     link
   };
 };
 
 export default class PageHeader extends Page {
-  title = new Paragraph("libft_transcendence")
-    .class("self-center text-2xl")
+  title = new Button(new Paragraph("libft_transcendence").class("self-center text-2xl"))
     .withOnclick(() => this.router.navigate(""))
     .withId("header-title");
   buttons: { elem: AElement, link: string }[];
@@ -30,15 +30,16 @@ export default class PageHeader extends Page {
       makeButton("Friends", "header-nav-friends", "friends"),
       makeButton(userInfo?.username ?? "", "header-nav-self", "dashboard"),
       {
-        elem: new Div(
-          this.userInfo?.avatarUrl
-            ? [new Image(this.userInfo.avatarUrl)]
-            : []
-        ).class("aspect-square bg-zinc-700/25 h-10 rounded-full self-center overflow-hidden flex")
-          .class(HOW_TO_CENTER_A_DIV)
-          .withId("header-nav-self-img"),
+        elem:
+          (this.userInfo?.avatarUrl
+            ? new Div(new Image(this.userInfo.avatarUrl))
+            : new Div()
+          ).class("aspect-square bg-zinc-700/25 h-10 rounded-full self-center overflow-hidden flex")
+            .class(HOW_TO_CENTER_A_DIV)
+            .withId("header-nav-self-img"),
         link: "dashboard"
       },
+      makeButton(ICON_QUIT, "header-nav-logout", "logout"),
     ];
 
     if (userInfo?.avatarUrl) {
@@ -55,11 +56,11 @@ export default class PageHeader extends Page {
 
   content(): AElement[] {
     return [
-      new Div([
+      new Div(
         this.title,
-        new Div([...this.navButtons])
-          .class("hidden md:flex flex-rot gap-4"),
-      ]).class("flex flex-rot jjustify-center md:justify-between ")
+        new Div(...this.navButtons)
+          .class("flex flex-rot gap-4"),
+      ).class("flex flex-rot justify-between")
         .class("h-full w-screen p-4 pl-12 pr-12 select-none font-bold"),
     ];
   }
@@ -69,7 +70,7 @@ export default class PageHeader extends Page {
     this.buttons.forEach((e) => {
       e.elem.byId()?.addEventListener('click', () => {
         this.router.navigate(e.link);
-      })
+      });
     });
   }
 };

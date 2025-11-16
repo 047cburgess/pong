@@ -1,0 +1,144 @@
+import { API } from "../Api";
+import { APP } from "../App";
+import Router, { Page } from "../Router";
+import { Div, AElement, Textbox, Paragraph } from "./elements/Elements";
+import { paths as ApiPaths } from "../PublicAPI";
+import { HOW_TO_CENTER_A_DIV, INPUT_BOX_OUTLINE } from "./elements/CssUtils";
+import { emailValidator, passwordValidator, usernameValidator } from "../FieldValidators";
+
+export default class RegisterPage extends Page {
+  readonly userText = new Textbox("username");
+  readonly emailText = new Textbox("email");
+  readonly passText = new Textbox("password").password();
+  readonly passText2 = new Textbox("password2").password();
+  readonly regButton;
+
+  private loggedOn: boolean = false;
+
+  constructor(router: Router) {
+    super(router);
+    this.loggedOn = !!APP.userInfo;
+
+    this.regButton = new Div(
+      new Paragraph("Sign up →").class("text-2xl p-2 select-none self-center text-center")
+    ).class(HOW_TO_CENTER_A_DIV)
+      .class("flex")
+      .withOnclick(this.trySignup.bind(this))
+      .withId("sign-in-btn");
+  }
+
+  async trySignup() {
+    // TODO(Vaiva): Signup request
+    alert("/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/");
+  }
+
+  content(): AElement[] {
+    if (this.loggedOn) return [];
+
+    return [
+      new Div(
+        new Paragraph("Join the").class("font-normal -mb-4"),
+        new Paragraph("LIBFT_TRANSCENDENCE").class("text-4xl"),
+        new Paragraph("The future of Pong is now.").class("font-normal pb-4 -mt-2"),
+        new Div(
+          new Paragraph("Username:").class("text-xl").withId("username-label"),
+          this.userText
+            .withOnkeydown(e => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                this.emailText.byId()?.focus();
+              }
+            })
+            .withValidator(usernameValidator)
+            .postValidation(() => this.errorsDiv(this.userText).redrawInner())
+            .class("rounded-xs text-2xl text-center outline-1 p-1 mt-2")
+            .class(INPUT_BOX_OUTLINE)
+            .class("transition duration-200 ease-in-out"),
+          this.errorsDiv(this.userText),
+        ).withId("username-area").withOnclick(() => this.userText.byId()?.focus()),
+        new Div(
+          new Paragraph("Email:").class("text-xl").withId("email-label"),
+          this.emailText
+            .withOnkeydown(e => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                this.passText.byId()?.focus();
+              }
+            })
+            .withValidator(emailValidator)
+            .postValidation(() => this.errorsDiv(this.emailText).redrawInner())
+            .class("rounded-xs text-2xl text-center outline-1 outline-neutral-700 focus:outline-neutral-400 p-1 mt-2"),
+          this.errorsDiv(this.emailText),
+        ).withId("email-area").withOnclick(() => this.emailText.byId()?.focus()),
+        new Div(
+          new Paragraph("Password:").class("text-xl").withId("password-label"),
+          this.passText
+            .withOnkeydown(e => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                this.passText2.byId()?.focus();
+              }
+            })
+            .withValidator(passwordValidator)
+            .withValidator(() => (this.passText2.runValidators(), null))
+            .postValidation(() => this.errorsDiv(this.passText).redrawInner())
+            .class("rounded-xs text-2xl text-center outline-1 outline-neutral-700 focus:outline-neutral-400 p-1 mt-2"),
+          this.errorsDiv(this.passText),
+        ).withId("password-area").withOnclick(() => this.passText.byId()?.focus()),
+        new Div(
+          new Paragraph("Repeat password:").class("text-xl").withId("password2-label"),
+          this.passText2
+            .withOnkeydown(e => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                this.trySignup();
+              }
+            })
+            .withValidator(val => {
+              const other = (this.passText.byId() as HTMLInputElement | null)?.value;
+              if (val && val !== other) {
+                return ["Passwords don't match"];
+              }
+              return null;
+            })
+            .postValidation(() => this.errorsDiv(this.passText2).redrawInner())
+            .class("rounded-xs text-2xl text-center outline-1 outline-neutral-700 focus:outline-neutral-400 p-1 mt-2"),
+          this.errorsDiv(this.passText2),
+        ).withId("password2-area").withOnclick(() => this.passText2.byId()?.focus()),
+        this.regButton,
+      ).class("absolute top-1/2 left-1/2 transform")
+        .class("-translate-y-1/2 -translate-x-1/2")
+        .class("flex flex-col gap-2 pb-2 font-bold select-none")
+        .class(HOW_TO_CENTER_A_DIV)
+    ];
+  }
+
+  bindEvents(): void {
+    this.content().forEach(x => x.bindEvents());
+  }
+
+  async loadData(): Promise<void> {
+    if (this.loggedOn) {
+      this.router.navigate("");
+    }
+
+    const resp = await API.fetch("/user");
+    let body;
+    if (resp.ok || resp.status === 304) {
+      body = await resp.json().catch(console.error) as void |
+        ApiPaths["/user"]["get"]["responses"]["200"]["content"]["application/json"];
+    }
+    if (body) {
+      APP.onLogin(await resp.json());
+      this.router.navigate("");
+    }
+  }
+
+  errorsDiv(elem: Textbox) {
+    const res = new Div();
+    res.withId(elem.id + "-errdiv");
+    new Set(elem.validationErrors ?? [])
+      .forEach(e => res.contents.push(new Paragraph("• " + e).class("text-red-500")));
+    return res;
+  }
+}

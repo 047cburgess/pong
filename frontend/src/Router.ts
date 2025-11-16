@@ -11,6 +11,8 @@ export abstract class Page {
   bindEvents(): void { }
   transitionIn(): null | void { return null; }
   transitionAway(): number | void { }
+
+  async loadData(): Promise<void> { }
 }
 
 const AUTO_ANIM_PRE = [
@@ -42,7 +44,7 @@ export default class Router {
 
   private navPending?: NodeJS.Timeout;
   private currentPath?: string;
-  private currentPage?: Page;
+  currentPage?: Page;
 
   constructor() {
     this.rootElement = document.getElementById("app-root") as HTMLElement;
@@ -122,6 +124,7 @@ export default class Router {
           bindEvents: () => { },
           transitionIn: () => { return null; },
           transitionAway: () => { },
+          loadData: async () => { },
         };
       }
       this.rootElement.classList.remove(...AUTO_ANIM, ...AUTO_ANIM_PRE);
@@ -136,7 +139,8 @@ export default class Router {
           });
         });
       }
-      this.currentPage?.bindEvents();
+      this.currentPage.bindEvents();
+      this.currentPage.loadData();
     }, delay);
   }
 

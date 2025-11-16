@@ -1,7 +1,10 @@
+import { FieldValidator } from "../../FieldValidators";
+import { INPUT_BOX_OUTLINE, INPUT_BOX_RED_OUTLINE } from "./CssUtils";
+
 export abstract class AElement {
   id?: string;
   classes: string[] = [];
-  onclick?: (this: GlobalEventHandlers, e: PointerEvent) => any;
+  private onclick?: (this: GlobalEventHandlers, e: PointerEvent) => any;
 
   abstract render(): string;
 
@@ -56,44 +59,8 @@ export abstract class AElement {
 
   bindEvents(): void {
     const self = this.byId();
-    if (!self || !this.onclick) {
-      return;
-    }
-    self.onclick = this.onclick;
-  }
-}
-
-export class Div extends AElement {
-  contents: AElement[] = [];
-
-  constructor(contents: AElement[] = []) {
-    super();
-    this.contents = contents;
-  }
-
-  render(): string {
-    let res = `<div ${this.genTags()}>`;
-    for (const e of this.contents) {
-      res += e.render();
-    }
-    res += "</div>";
-    return res;
-  }
-
-  bindEvents(): void {
-    super.bindEvents();
-    for (const e of this.contents) {
-      e.bindEvents();
-    }
-  }
-
-  redrawInner(): void {
-    const self = this.byId();
-    if (!self) {
-      return;
-    }
-    self.innerHTML = this.contents.map(e => e.render()).join("");
-    this.bindEvents();
+    if (!self) return;
+    self.onclick = this.onclick ?? null;
   }
 }
 
@@ -124,7 +91,11 @@ export class Label extends AElement {
 };
 
 export class Textbox extends AElement {
-  _password: boolean = false;
+  private _password: boolean = false;
+  private onkeydown?: (this: GlobalEventHandlers, e: KeyboardEvent) => any;
+  private postVal?: (e: Textbox) => any;
+  validators: FieldValidator[] = [];
+  validationErrors: string[] | undefined;
 
   constructor(id: string) {
     super();
@@ -139,6 +110,55 @@ export class Textbox extends AElement {
   render(): string {
     const t = this._password ? "password" : "text";
     return `<input type="${t}" ${this.genTags()}/>`;
+  }
+
+  runValidators() {
+    const self = this.byId() as null | HTMLInputElement;
+    if (!self) return;
+    let errors: undefined | string[];
+    for (const v of this.validators) {
+      const res = v(self.value);
+      if (res === null) {
+        continue;
+      }
+      errors = errors ?? [];
+      errors.push(...res);
+    }
+    if (errors !== undefined) {
+      self.classList.remove(...INPUT_BOX_OUTLINE);
+      self.classList.add(...INPUT_BOX_RED_OUTLINE);
+    } else {
+      self.classList.remove(...INPUT_BOX_RED_OUTLINE);
+      self.classList.add(...INPUT_BOX_OUTLINE);
+    }
+    this.validationErrors = errors;
+    this.postVal?.call(null, this);
+  }
+
+  bindEvents(): void {
+    super.bindEvents();
+    const self = this.byId() as null | HTMLInputElement;
+    if (!self) return;
+    self.onkeyup = this.runValidators.bind(this);
+    self.onkeydown = this.onkeydown ?? null;
+  }
+
+  withOnkeydown(
+    onkeydown: (this: GlobalEventHandlers, e: KeyboardEvent) => any
+  ): Textbox {
+    this.onkeydown = onkeydown;
+    return this;
+  }
+
+  withValidator(v: FieldValidator): Textbox {
+    this.validators.push(v);
+    return this;
+  }
+
+  postValidation(cb: null | ((e: Textbox) => any)): Textbox {
+    if (cb) this.postVal = cb;
+    else delete this.postVal;
+    return this;
   }
 };
 
@@ -185,5 +205,50 @@ export class Image extends AElement {
 
   render(): string {
     return `<img src="${this.src}" ${this.genTags()}/>`;
+  }
+};
+
+export abstract class AContainer extends AElement {
+  contents: AElement[] = [];
+
+  constructor(...contents: AElement[]) {
+    super();
+    this.contents = contents;
+  }
+
+  renderContents(): string {
+    return this.contents.map(e => e.render()).join("");
+  }
+
+  bindEvents(): void {
+    super.bindEvents();
+    this.contents.forEach(e => e.bindEvents());
+  }
+
+  redrawInner(): void {
+    const self = this.byId();
+    if (!self) return;
+    self.innerHTML = this.renderContents();
+    this.bindEvents();
+  }
+}
+
+export class Div extends AContainer {
+  constructor(...contents: AElement[]) {
+    super(...contents);
+  }
+
+  render(): string {
+    return `<div ${this.genTags()}>${this.renderContents()}</div>`;
+  }
+}
+
+export class Button extends AContainer {
+  constructor(...contents: AElement[]) {
+    super(...contents);
+  }
+
+  render(): string {
+    return `<button ${this.genTags()}>${this.renderContents()}</button>`;
   }
 };

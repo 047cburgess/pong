@@ -31,3 +31,11 @@ export const AVATAR_DIV = [
   "select-none", "flex",
   ...HOW_TO_CENTER_A_DIV,
 ];
+
+export const INPUT_BOX_OUTLINE = [
+  "outline-neutral-700", "focus:outline-neutral-400"
+];
+
+export const INPUT_BOX_RED_OUTLINE = [
+  "outline-red-500", "focus:outline-red-500"
+];

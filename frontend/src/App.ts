@@ -1,16 +1,24 @@
-import Router, { Page } from "./Router";
+import './styles.css';
 
+import Router, { Page } from "./Router";
 import WelcomePage from "./pages/Welcome";
 import LoginPage from "./pages/Login";
 import DashboardPage from "./pages/Dashboard";
 import NotFoundPage from "./pages/NotFound";
-
-import './styles.css';
 import PageHeader from "./pages/Header";
 import { API, SelfInfo } from "./Api";
 import FriendsPage from "./pages/Friends";
 import MatchHistoryPage from "./pages/MatchHistory";
-import { AElement } from "./pages/elements/Elements";
+import { AElement, Div, Paragraph } from "./pages/elements/Elements";
+import { HOW_TO_CENTER_A_DIV, MUTED_TEXT } from "./pages/elements/CssUtils";
+import RegisterPage from './pages/Register';
+import TournamentHistoryPage from './pages/TournamentHistory';
+
+export const getUsername = (): string | null => {
+  return new URLSearchParams(location.search).get("user")
+    ?? APP.userInfo?.username
+    ?? null;
+};
 
 class RedirToLogin extends Page {
   constructor(router: Router) {
@@ -18,10 +26,18 @@ class RedirToLogin extends Page {
   }
 
   content(): AElement[] {
-    return [];
+    return [new Div(
+      new Paragraph("Redirecting to login...")
+        .class(MUTED_TEXT)
+        .class("text-4xl")
+    ).class("absolute top-1/2 left-1/2")
+      .class("transform -translate-y-1/2 -translate-x-1/2")
+      .class("flex flex-col select-none font-bold")
+      .class(HOW_TO_CENTER_A_DIV)];
   }
 
   bindEvents() {
+    APP.onLogout();
     this.router.navigate("/login");
   }
 }
@@ -37,7 +53,7 @@ class App {
   constructor(userInfo: SelfInfo | null) {
     this.evtSource = new EventSource("/api/events");
     this.evtSource.onmessage = (_e) => {
-      // TODO(Vaiva): Notifications
+      // TODO(Vaiva): SSE handler
     };
 
     this.userInfo = userInfo;
@@ -45,9 +61,8 @@ class App {
     this.router = new Router();
 
     this.headerRoot = document.getElementsByTagName("header")[0] as HTMLElement;
-    this.header = new PageHeader(this.router, this.userInfo);
-    this.headerRoot.innerHTML = this.header.content().map((e) => e.render()).join("");
-    this.header.bindEvents();
+    this.header = "fuck typescript" as any as PageHeader;
+    this.reloadHeader();
 
     this.router.addError(404, NotFoundPage);
     this.router.addError(401, RedirToLogin);
@@ -57,6 +72,8 @@ class App {
     this.router.addRoute("dashboard", DashboardPage);
     this.router.addRoute("friends", FriendsPage);
     this.router.addRoute("game-history", MatchHistoryPage);
+    this.router.addRoute("tournament-history", TournamentHistoryPage);
+    this.router.addRoute("register", RegisterPage);
 
     this.router.navigate(location.pathname + location.search, false);
   }
@@ -79,10 +96,9 @@ class App {
   }
 }
 
-const resp = await API.fetch("/user");
+const resp = await API.fetch("/user")
 let info: SelfInfo | null = (resp.ok || resp.status === 304)
-  ? null
-  : null;
+  ? await resp.json().catch(console.error) : null;
 info = {
   id: 0,
   username: "Vaiva",

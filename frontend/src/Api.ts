@@ -16,8 +16,12 @@ export const API = new ApiAccessor("/api/v1");
 
 export type ApiSchemas = ApiComponents["schemas"];
 
+export type InfoExt = { playerInfos: UserInfo[], thisUser?: number };
+
 export type GameResult = ApiSchemas["GameResult"];
-export type GameResultExt = GameResult & { playerInfos: UserInfo[], thisUser?: number };
+export type GameResultExt = GameResult & InfoExt;
 export type GameStats = ApiSchemas["GameStats"];
 export type UserInfo = ApiSchemas["User.PublicInfo"];
 export type SelfInfo = ApiSchemas["User.PublicInfo"] & ApiSchemas["User.PrivateInfo"];
+export type TournamentResult = ApiSchemas["TournamentResult"];
+export type TournamentResultExt = ApiSchemas["TournamentResult"] & InfoExt;
