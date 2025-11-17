@@ -6,6 +6,8 @@ import { JWTManager } from './JWTManager';
 import { IdUtils } from '../Utils/IdUtils';
 import { OauthCredentialsInfo } from '../Interfaces/UserPrivateInfo';
 import { DbManager } from './DbManager';
+import { TwoFAManager } from './TwoFAManager';
+import { TwoFactorRequiredError } from '../Errors/TwoFactorRequiredError';
 
 // Définir la structure de la réponse d'échange de token (pour la clarté)
 interface GitHubTokenResponse {
@@ -106,7 +108,6 @@ export class OAuthManager {
 				`GitHub: ${data.error_description || data.error || 'Inconnu'}`
 			);
 		}
-		
 		return { accessToken: data.access_token };
 	}
 
@@ -127,6 +128,14 @@ export class OAuthManager {
 		const existingUser = db.getUserByOAuthId(userProfile.id.toString(), 'github');
 		if (existingUser) {
 			localUserId = existingUser.id;
+			//in case we want to combo 2FA + OAuth
+			if (existingUser.TwoFA) {
+				const TFAManager = TwoFAManager.getInstance();
+				const token = TFAManager.generateAndStoreCode(existingUser.id);
+				await TFAManager.sendMail(token, existingUser.email);
+
+				throw new TwoFactorRequiredError(token.toString());
+			}
 		} else {
 			const credentials: OauthCredentialsInfo = {
 				id: IdUtils.generateId(timestamp),
@@ -154,9 +163,36 @@ export class OAuthManager {
 			throw ApiError.Internal("GITHUB_API_ERROR", "Failed to retrieve user profile from GitHub API.");
 		}
 
-		const profileData = await response.json();
+		const profileData = await response.json() as GitHubProfileResponse;
 
-		return profileData as GitHubProfileResponse;
+		if (!profileData.email) {
+			const emailsResp = await fetch('https://api.github.com/user/emails', {
+				method: 'GET',
+				headers: {
+					'Authorization': `Bearer ${accessToken}`,
+					'Accept': 'application/vnd.github.v3+json',
+				},
+			});
+
+			if (emailsResp.ok) {
+				const emailsJson = await emailsResp.json(); // type unknown
+				const emails = emailsJson as {
+					email: string;
+					primary: boolean;
+					verified: boolean;
+					visibility: string | null;
+				}[];
+				const primaryEmail = emails.find(e => e.primary && e.verified);
+				if (primaryEmail) {
+					profileData.email = primaryEmail.email;
+				} else if (emails.length > 0) {
+					profileData.email = emails[0].email;
+				}
+			}
+		}
+
+		console.log(profileData);
+		return profileData;
 	}
 
 	public retrieveAndClearState(sessionId: string): string | undefined {

@@ -2,7 +2,12 @@ import fastify from "fastify";
 import cors from '@fastify/cors';
 import { apiGateway } from "./Api/ApiGateway";
 import { AuthPlugin } from "./Api/AuthPuglin";
-
+import fastifyCookie from "@fastify/cookie";
+import fastifyStatic from "@fastify/static";
+import path from "path";
+import dotenv from 'dotenv';
+import { JWTManager } from "./Managers/JWTManager";
+import { TwoFAManager } from "./Managers/TwoFAManager";
 
 let isInitialized = false;
 let clearIntervalHandle: NodeJS.Timeout | null = null;
@@ -19,7 +24,7 @@ server.register(cors, {
 
 export function initializeApp() {
 	if (isInitialized) return;
-
+	dotenv.config();
 	isInitialized = true;
 	console.log('✅ App initialized');
 
@@ -41,6 +46,16 @@ export function createServer() {
 		}
 	});
 
+	server.register(fastifyStatic, {
+        root: path.join(process.cwd(), "../../frontend"),
+        setHeaders: (res, path, stat) => {
+            if (path.endsWith('.js')) {
+                res.setHeader('Content-Type', 'application/javascript');
+            }
+        },
+    });
+
+	server.register(fastifyCookie);
 
 	server.register(AuthPlugin);
 	server.register(apiGateway);
@@ -54,7 +69,7 @@ export function createServer() {
 
 async function gracefulShutdown(server: any) {
 	server.log.info("\n🛑 Shutting down server...");
-
+	TwoFAManager.getInstance().closeAllIntervals();
 	try {
 		await server.close();
 		server.log.info("✅ Fastify server closed");

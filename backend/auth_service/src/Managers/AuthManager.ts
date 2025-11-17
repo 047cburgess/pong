@@ -8,7 +8,6 @@ import { TwoFAManager } from "./TwoFAManager";
 import { JWTManager } from "./JWTManager";
 import { ApiError } from "../Errors/ApiError";
 import { TwoFactorRequiredError } from "../Errors/TwoFactorRequiredError";
-import { logger } from "../Utils/Logger"; 
 
 
 
@@ -30,11 +29,8 @@ export class AuthManager {
 	
 	//credential is either mail or username
 	async login(credential: string, password: string): Promise<string> {
-
-		logger.debug({ credential, password }, 'AUTH MANAGER: Login Function');
 		
 		const user = this.db.getUserByCredential(credential);
-		logger.debug({ user }, 'AUTH MANAGER: Login Function: User');
 
 		if (!user) {
 			throw ApiError.Unauthorized("AUTHENTIFICATION_FAILED", "Incorrect Username.");
@@ -78,7 +74,6 @@ export class AuthManager {
 	}
 
 	async register(credentialsInfo: Omit<CredentialsInfo, 'id'>): Promise<string> {
-		logger.debug({ credentialsInfo }, 'AUTH MANAGER: Register Function');
 		this.validateCredentialsInfo(credentialsInfo);
 
 		const timestamp = Date.now();
@@ -89,7 +84,6 @@ export class AuthManager {
 			password: await PasswordUtils.hash(credentialsInfo.password),
 			TwoFA: credentialsInfo.TwoFA || 0
 		};
-		logger.debug({ credentials }, 'AUTH MANAGER: Register Function');
 		this.trySaveCredentials(credentials);
 
 		return this.jwt_manager.generateJWT(credentials.id);
