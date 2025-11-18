@@ -267,24 +267,24 @@ class PongApp {
 
   startRenderLoop() {
     this.engine.runRenderLoop(() => {
-      this.sendInput(this.player1);
+      if (!this.isViewer) this.sendInput(this.player1);
       if (this.player2) this.sendInput(this.player2);
       if (this.player3) this.sendInput(this.player3);
       if (this.player4) this.sendInput(this.player4);
       if (this.prevState) {
-        // Update player list UI to show current scores
+        // Update player list UI to show current scores -- REMOVE THIS AND JUST LEAVE BABYLON AS PURE GAME RENDER AND ADD UI SEPARATELY??
         this.updatePlayerListUI();
-        // TODO(vaiva): Remove debug
+
         const debugtext = document.getElementById("debugtext");
         if (debugtext) {
-          // Show scores for all players
-          const scores = this.gameState.players.map(p => p.score).join('  ');
-          // Show countdown during pauseCd, then show actual time
+	  // Show scores for all players
+	  const scores = this.gameState.players.map(p => p.score).join('  ');
+  	// show count down
           if (this.gameState.pauseCd > 0) {
             const countdownSeconds = Math.ceil(this.gameState.pauseCd * this.params.tickMs / 1000);
-            debugtext.textContent = `${scores}  |  ${countdownSeconds}`;
+	    debugtext.textContent = `${scores}  |  ${countdownSeconds}`;
           } else {
-            debugtext.textContent = `${scores}  |  ${Math.floor(this.gameState.time / 1000)}`;
+	    debugtext.textContent = `${scores}  |  ${Math.floor(this.gameState.time / 1000)}`;
           }
         }
         if (typeof this.prevState.ball.lastRefl === "number") {
@@ -429,7 +429,7 @@ class PongApp {
 
       const debugtext = document.getElementById("debugtext");
       if (debugtext) {
-        debugtext.textContent = "⚠️ Game Abandoned: " + msg.reason;
+        debugtext.textContent = "Game Abandoned: " + msg.reason;
         debugtext.style.color = "#ff9800";
       }
 
@@ -469,8 +469,6 @@ class PongApp {
       const rgb = `rgb(${Math.floor(color.r * 255)}, ${Math.floor(color.g * 255)}, ${Math.floor(color.b * 255)})`;
 
       // Key bindings for each player
-      // Remote games: all players use W/S (camera is rotated)
-      // Local games: each player has different keys
       let keyBinding = '';
       if (this.isLocal) {
         const localKeyBindings = [
@@ -481,7 +479,6 @@ class PongApp {
         ];
         keyBinding = localKeyBindings[i];
       } else {
-        // Remote game: everyone uses W/S
         keyBinding = '(W/S)';
       }
 
