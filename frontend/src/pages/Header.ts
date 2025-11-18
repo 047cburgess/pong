@@ -31,10 +31,10 @@ export default class PageHeader extends Page {
       makeButton(userInfo?.username ?? "", "header-nav-self", "dashboard"),
       {
         elem:
-          (this.userInfo?.avatarUrl
-            ? new Div(new Image(this.userInfo.avatarUrl))
-            : new Div()
-          ).class("aspect-square bg-zinc-700/25 h-10 rounded-full self-center overflow-hidden flex")
+          new Div(
+            new Image("/api/v1/user/avatars/" + userInfo?.username)
+          )
+            .class("aspect-square bg-zinc-700/25 h-10 rounded-full self-center overflow-hidden flex")
             .class(HOW_TO_CENTER_A_DIV)
             .withId("header-nav-self-img"),
         link: "dashboard"

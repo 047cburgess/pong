@@ -13,6 +13,9 @@ import { AElement, Div, Paragraph } from "./pages/elements/Elements";
 import { HOW_TO_CENTER_A_DIV, MUTED_TEXT } from "./pages/elements/CssUtils";
 import RegisterPage from './pages/Register';
 import TournamentHistoryPage from './pages/TournamentHistory';
+import LogoutPage from './pages/Logout';
+import GithubCallback from './pages/OauthCallback';
+import SettingsPage from './pages/Settings';
 
 export const getUsername = (): string | null => {
   return new URLSearchParams(location.search).get("user")
@@ -74,6 +77,9 @@ class App {
     this.router.addRoute("game-history", MatchHistoryPage);
     this.router.addRoute("tournament-history", TournamentHistoryPage);
     this.router.addRoute("register", RegisterPage);
+    this.router.addRoute("logout", LogoutPage);
+    this.router.addRoute("user/oauth/github/callback", GithubCallback);
+    this.router.addRoute("settings", SettingsPage);
 
     this.router.navigate(location.pathname + location.search, false);
   }
@@ -97,12 +103,7 @@ class App {
 }
 
 const resp = await API.fetch("/user")
-let info: SelfInfo | null = (resp.ok || resp.status === 304)
+const info: SelfInfo | null = (resp.ok || resp.status === 304)
   ? await resp.json().catch(console.error) : null;
-info = {
-  id: 0,
-  username: "Vaiva",
-  email: "test@example.com",
-};
 
 export const APP = new App(info);

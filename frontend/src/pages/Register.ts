@@ -1,7 +1,7 @@
 import { API } from "../Api";
 import { APP } from "../App";
 import Router, { Page } from "../Router";
-import { Div, AElement, Textbox, Paragraph } from "./elements/Elements";
+import { Div, AElement, Textbox, Paragraph, Button } from "./elements/Elements";
 import { paths as ApiPaths } from "../PublicAPI";
 import { HOW_TO_CENTER_A_DIV, INPUT_BOX_OUTLINE } from "./elements/CssUtils";
 import { emailValidator, passwordValidator, usernameValidator } from "../FieldValidators";
@@ -11,7 +11,7 @@ export default class RegisterPage extends Page {
   readonly emailText = new Textbox("email");
   readonly passText = new Textbox("password").password();
   readonly passText2 = new Textbox("password2").password();
-  readonly regButton;
+  readonly regButton: Button;
 
   private loggedOn: boolean = false;
 
@@ -19,17 +19,57 @@ export default class RegisterPage extends Page {
     super(router);
     this.loggedOn = !!APP.userInfo;
 
-    this.regButton = new Div(
+    this.regButton = new Button(
       new Paragraph("Sign up →").class("text-2xl p-2 select-none self-center text-center")
     ).class(HOW_TO_CENTER_A_DIV)
       .class("flex")
       .withOnclick(this.trySignup.bind(this))
-      .withId("sign-in-btn");
+      .withId("sign-in-btn") as Button;
   }
 
   async trySignup() {
-    // TODO(Vaiva): Signup request
-    alert("/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/");
+    const username = (this.userText.byId() as HTMLInputElement).value;
+    const email = (this.emailText.byId() as HTMLInputElement).value;
+    const pass = (this.passText.byId() as HTMLInputElement).value;
+
+    if (emailValidator(email) !== null || usernameValidator(username) !== null
+      || passwordValidator(pass) !== null || pass !== (this.passText2.byId() as HTMLInputElement).value) {
+      alert("Please ensure you've entered valid values in all fields");
+      return;
+    }
+
+    let resp;
+    try {
+      resp = await fetch("/api/v1/user/register", {
+        method: "POST",
+        body: JSON.stringify({
+          username: (this.userText.byId() as HTMLInputElement).value,
+          email: (this.emailText.byId() as HTMLInputElement).value,
+          password: (this.passText.byId() as HTMLInputElement).value,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    } catch (e: any) {
+      // TODO
+      return;
+    }
+    if (!resp.ok) {
+      // TODO
+      return;
+    }
+
+    resp = await API.fetch("/user");
+    let body;
+    if (resp.ok || resp.status === 304) {
+      body = await resp.json().catch(console.error) as void |
+        ApiPaths["/user"]["get"]["responses"]["200"]["content"]["application/json"];
+    }
+    if (body) {
+      APP.onLogin(body);
+      this.router.navigate("");
+    }
   }
 
   content(): AElement[] {

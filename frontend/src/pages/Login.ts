@@ -5,6 +5,7 @@ import { Div, AElement, Textbox, Paragraph, Inline, Button } from "./elements/El
 import { paths as ApiPaths } from "../PublicAPI";
 import { HOW_TO_CENTER_A_DIV } from "./elements/CssUtils";
 import { GITHUB_LOGO } from "./elements/SvgIcons";
+import { usernameValidator } from "../FieldValidators";
 
 export default class LoginPage extends Page {
   readonly userText = new Textbox("username");
@@ -36,12 +37,42 @@ export default class LoginPage extends Page {
 
   async trySignin() {
     // TODO(Vaiva): Sign in handler
-    alert("hi");
+    let resp;
+    try {
+      resp = await fetch("/api/v1/user/login", {
+        method: "POST",
+        body: JSON.stringify({
+          username: (this.userText.byId() as HTMLInputElement).value,
+          password: (this.passText.byId() as HTMLInputElement).value,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        }
+      });
+    } catch (e: any) {
+      // TODO
+      return;
+    }
+
+    await this.loadData();
   }
 
   async callOauth() {
-    // TODO(Vaiva): Oauth handler
-    alert("hello");
+    let resp;
+    try {
+      resp = await fetch("/api/v1/user/oauth/github", { method: "POST" });
+    } catch (e: any) {
+      // TODO
+      return;
+    }
+    if (!resp.ok) {
+      // TODO
+      return;
+    }
+
+    const url = (await resp.json()).redirectUrl;
+
+    location.href = url;
   }
 
   content(): AElement[] {
@@ -92,14 +123,14 @@ export default class LoginPage extends Page {
       this.router.navigate("");
     }
 
-    const resp = await API.fetch("/user");
+    const resp = await API.fetch("/user"); // TODO try catch
     let body;
     if (resp.ok || resp.status === 304) {
       body = await resp.json().catch(console.error) as void |
         ApiPaths["/user"]["get"]["responses"]["200"]["content"]["application/json"];
     }
     if (body) {
-      APP.onLogin(await resp.json());
+      APP.onLogin(body);
       this.router.navigate("");
     }
   }

@@ -40,5 +40,13 @@ module.exports = {
     },
     compress: true,
     port: 8090,
+    proxy: [
+      {
+        context: ['/api/v1'],
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+        // pathRewrite: { '^/api/v1': '' },
+      }
+    ],
   }
 };

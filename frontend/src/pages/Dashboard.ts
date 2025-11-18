@@ -72,8 +72,8 @@ export default class DashboardPage extends Page {
         .class("flex flex-col grow lg:max-w-100 gap-2 md:gap-4"),
       new Div(...sideRight)
         .class("col-span-2 flex flex-col grow lg:max-w-200 gap-2 md:gap-4"),
-    ).class("gap-2 flex flex-col p-12 min-w-120 max-w-300")
-      .class("md:grid md:grid-cols-3 ml-auto mr-auto md:gap-4"),
+    ).class("gap-2 p-12 min-w-120 max-w-300")
+      .class("grid grid-cols-3 ml-auto mr-auto md:gap-4"),
     ];
   }
 
@@ -93,9 +93,7 @@ export default class DashboardPage extends Page {
 
     return new Div(
       new Div(
-        this.userInfo?.avatarUrl
-          ? new Image(this.userInfo.avatarUrl)
-          : new Paragraph("nothing to see here").class("self-center")
+        new Image("/api/v1/user/avatars/" + this.username + ".webp")
       ).class("text-zinc-700/10 bg-zinc-800 mb-4 col-span-2")
         .class(AVATAR_DIV),
       new Div(
@@ -360,8 +358,9 @@ export default class DashboardPage extends Page {
   async loadData(): Promise<void> {
     let path = "/user";
     if (this.username === APP.userInfo?.username) {
-      path = `/users/${this.username}`;
+      path = `/user/${this.username}`;
     }
+    path = "/user";
 
     const thenJson =
       (x: Promise<Response>) => x.then(async r => await r.json())

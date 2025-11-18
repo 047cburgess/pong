@@ -204,7 +204,7 @@ export class Image extends AElement {
   }
 
   render(): string {
-    return `<img src="${this.src}" ${this.genTags()}/>`;
+    return `<img class="object-fill max-h-full drop-shadow-md rounded-md m-auto" src="${this.src}" ${this.genTags()}/>`;
   }
 };
 

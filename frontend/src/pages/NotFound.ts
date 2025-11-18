@@ -1,6 +1,6 @@
 import Router, { Page } from "../Router";
 import { HOW_TO_CENTER_A_DIV } from "./elements/CssUtils";
-import { AElement, Div, Header, Paragraph } from "./elements/Elements";
+import { AElement, Button, Header, Paragraph } from "./elements/Elements";
 
 
 export default class NotFoundPage extends Page {
@@ -8,7 +8,7 @@ export default class NotFoundPage extends Page {
     .class("mt-8 text-2xl")
     .withId("return-btn");
 
-  private root = new Div(
+  private root = new Button(
     new Header(1, "404").class("text-8xl"),
     new Header(2, "Not found :(").class("text-4xl"),
     this.backToMain,

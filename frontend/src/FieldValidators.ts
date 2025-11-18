@@ -9,32 +9,58 @@ export const usernameValidator: FieldValidator = (username) => {
   } else if (username.length < 3) {
     errors.push("Username too short");
   }
-  if (username.length > 20) {
+  if (username.length > 32) {
     errors.push("Username too long");
   }
 
-  if (!username.match(/^[a-zA-Z0-9_]+$/)) {
+  if (!username.match(/^[a-zA-Z0-9_.]*$/)) {
     errors.push("Invalid characters");
   }
 
   if (errors.length) {
     return errors;
   }
+
   return null;
 };
 
 export const passwordValidator: FieldValidator = (password) => {
   const errors: string[] = [];
 
-  if (password.length <= 7) {
-    errors.push("Password too short");
-  }
-
   if (password === "password") {
     errors.push("This password already exists in our database");
     errors.push("Just kidding");
     errors.push("But maybe try something more original?");
   }
+
+  enum PasswordErrors {
+    TOO_SHORT = "Password too short",
+    TOO_LONG = "Password too long",
+    MISSING_UPPERCASE = "Need at least one uppercase character",
+    MISSING_LOWERCASE = "Need at least one lowercase character",
+    MISSING_NUMBER = "Need at least one number",
+    MISSING_SPECIAL = "Need at least one special character"
+  }
+
+  const HAS_UPPERCASE = /[A-Z]/;
+  const HAS_LOWERCASE = /[a-z]/;
+  const HAS_NUMBER = /[0-9]/;
+  const HAS_SPECIAL = /[!@#$%^&*(),.?":{}|<>-_]/;
+  const PASSWORD_MIN_LEN = 8;
+  const PASSWORD_MAX_LEN = 64;
+
+  if (!password || password.length < PASSWORD_MIN_LEN)
+    errors.push(PasswordErrors.TOO_SHORT);
+  if (password.length > PASSWORD_MAX_LEN)
+    errors.push(PasswordErrors.TOO_LONG);
+  if (!HAS_UPPERCASE.test(password))
+    errors.push(PasswordErrors.MISSING_UPPERCASE);
+  if (!HAS_LOWERCASE.test(password))
+    errors.push(PasswordErrors.MISSING_LOWERCASE);
+  if (!HAS_NUMBER.test(password))
+    errors.push(PasswordErrors.MISSING_NUMBER);
+  if (!HAS_SPECIAL.test(password))
+    errors.push(PasswordErrors.MISSING_SPECIAL);
 
   if (errors.length) {
     return errors;
