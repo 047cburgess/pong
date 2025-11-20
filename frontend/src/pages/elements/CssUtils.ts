@@ -39,3 +39,11 @@ export const INPUT_BOX_OUTLINE = [
 export const INPUT_BOX_RED_OUTLINE = [
   "outline-red-500", "focus:outline-red-500"
 ];
+
+export const TIMER_COUNTDOWN = [
+  "text-6xl", "text-pink-500"
+];
+
+export const TIMER_NORMAL = [
+  "text-5xl", "text-white"
+];

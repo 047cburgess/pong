@@ -103,7 +103,7 @@ export default class PlayPage extends Page {
         .class("w-full max-w-md")
         .withId("btn-local-custom")
         .withOnclick(() => {
-          this.router.navigate("/.......");
+          this.router.navigate("/games/local");
         }),
 
       // 4 player tournament
@@ -117,7 +117,7 @@ export default class PlayPage extends Page {
         .class("w-full max-w-md")
         .withId("btn-local-tournament")
         .withOnclick(() => {
-          this.router.navigate("/sfsdfsd"); // placeholder
+          this.router.navigate("/tournaments/local");
         }),
 
       // Back button

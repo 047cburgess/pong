@@ -17,6 +17,7 @@ import LogoutPage from './pages/Logout';
 import GithubCallback from './pages/OauthCallback';
 import SettingsPage from './pages/Settings';
 import PlayPage from './pages/Play';
+import GameLocalPage from './pages/GameLocal';
 
 export const getUsername = (): string | null => {
   return new URLSearchParams(location.search).get("user")
@@ -82,6 +83,7 @@ class App {
     this.router.addRoute("user/oauth/github/callback", GithubCallback);
     this.router.addRoute("settings", SettingsPage);
     this.router.addRoute("play", PlayPage);
+    this.router.addRoute("games/local", GameLocalPage);
 
     this.router.navigate(location.pathname + location.search, false);
   }

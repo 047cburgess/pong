@@ -5,6 +5,7 @@ export abstract class AElement {
   id?: string;
   classes: string[] = [];
   private onclick?: (this: GlobalEventHandlers, e: PointerEvent) => any;
+  private inlineStyle?: string;
 
   abstract render(): string;
 
@@ -31,6 +32,11 @@ export abstract class AElement {
     return this;
   }
 
+  withStyle(style: string): AElement {
+    this.inlineStyle = style;
+    return this;
+  }
+
   protected genTags(): string {
     let res = "";
     if (this.id) {
@@ -38,6 +44,9 @@ export abstract class AElement {
     }
     if (this.classes.length) {
       res += `class="${this.classes.join(" ")}" `;
+    }
+    if (this.inlineStyle) {
+      res += `style="${this.inlineStyle}" `;
     }
     return res;
   }
