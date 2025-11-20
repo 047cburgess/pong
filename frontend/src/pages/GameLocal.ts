@@ -90,11 +90,11 @@ export default class GameLocalPage extends Page {
                 .class("text-sm font-bold text-neutral-300 mb-2 text-center"),
 
               new Div(
-                new Paragraph("• First to 7 points wins")
+                new Paragraph("First to 7 points wins")
                   .class("text-sm text-neutral-400"),
-                new Paragraph("• Game ends after 2 minutes")
+                new Paragraph("Game ends after 2 minutes")
                   .class("text-sm text-neutral-400"),
-                new Paragraph("• Own goals lose a point")
+                new Paragraph("Own goals lose a point")
                   .class("text-sm text-neutral-400")
               ).class("mb-6 text-center"),
 
@@ -181,6 +181,12 @@ export default class GameLocalPage extends Page {
 
     this.renderGameState();
     this.bindSetupButtons();
+  }
+
+  transitionAway(): void {
+    // Clean up game resources when navigating away
+    this.resetGame();
+    this.restoreHeader();
   }
 
   private bindSetupButtons(): void {
@@ -589,13 +595,14 @@ export default class GameLocalPage extends Page {
 
   private resetGame(): void {
     if (this.gameInstance) {
-      // Close all WebSocket connections
-      [this.gameInstance.player1, this.gameInstance.player2,
-       this.gameInstance.player3, this.gameInstance.player4]
-        .filter((p): p is NonNullable<typeof p> => p !== undefined && p.ws !== undefined)
-        .forEach(p => p.ws.close());
-
+      //ADDED: to clean up all resources
+      this.gameInstance.dispose();
       this.gameInstance = null;
+    }
+
+    const container = document.getElementById('canvas-container');
+    if (container) {
+      container.innerHTML = '';
     }
 
     this.gameKeys = [];

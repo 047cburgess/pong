@@ -507,6 +507,23 @@ export class PongApp {
 
     playerListEl.innerHTML = playerRows.join('');
   }
+
+  dispose() {
+    this.engine.stopRenderLoop();
+
+    // Close ws connections
+    [this.sock, this.player2?.ws, this.player3?.ws, this.player4?.ws]
+      .filter((ws): ws is WebSocket => ws !== undefined)
+      .forEach(ws => {
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          ws.close();
+        }
+      });
+
+    // ADDED: dispose bblon resources
+    this.scene.dispose();
+    this.engine.dispose();
+  }
 }
 
 const PLAYER_COLORS = [
