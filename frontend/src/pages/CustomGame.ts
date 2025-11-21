@@ -192,7 +192,6 @@ export class CustomGamePage extends Page {
 
   constructor(router: Router, isHost = false) {
     super(router);
-    if (!APP.userInfo) throw new NavError(401);
     this.isHost = isHost;
     if (isHost)
       this.playerSlots[0] = {

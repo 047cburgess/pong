@@ -20,8 +20,7 @@ export default class TournamentHistoryPage extends AListPage {
       titleForUser("Tournament history", getUsername() ?? ""),
     );
 
-    const username = getUsername();
-    if (!username) throw new NavError(401);
+    const username = getUsername()!;
     this.username = username;
   }
 

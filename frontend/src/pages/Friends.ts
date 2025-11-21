@@ -72,8 +72,7 @@ export default class FriendsPage extends AListPage {
   constructor(router: Router) {
     super(router, "friends-page", titleForUser("Friends", getUsername() ?? ""));
 
-    const username = getUsername();
-    if (!username) throw new NavError(401);
+    const username = getUsername()!;
     this.username = username;
   }
 

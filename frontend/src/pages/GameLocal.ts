@@ -42,9 +42,6 @@ export default class GameLocalPage extends Page {
 
   constructor(router: Router) {
     super(router);
-    if (!APP.userInfo) {
-      throw new NavError(401);
-    }
   }
 
   content(): AElement[] {

@@ -1,5 +1,5 @@
 import { API, GameResultExt, GameStats, UserInfo } from "../Api";
-import { APP } from "../App";
+import { APP, getUsername } from "../App";
 import Router, { NavError, Page } from "../Router";
 import {
   AVATAR_DIV,
@@ -40,13 +40,8 @@ export default class DashboardPage extends Page {
   constructor(router: Router) {
     super(router);
 
-    let username = new URLSearchParams(location.search).get("user");
-    if (!username) {
-      username = APP.userInfo?.username ?? null;
-    }
-    if (!username) {
-      throw new NavError(401);
-    }
+    let username =
+      new URLSearchParams(location.search).get("user") || getUsername()!;
     this.username = username;
 
     if (username === APP.userInfo?.username) {

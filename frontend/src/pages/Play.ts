@@ -1,7 +1,6 @@
-import { APP } from "../App";
-import Router, { NavError, Page } from "../Router";
+import Router, { Page } from "../Router";
 import { AElement, Div, Paragraph, Button, Header } from "./elements/Elements";
-import { DEFAULT_BUTTON, HOW_TO_CENTER_A_DIV } from "./elements/CssUtils";
+import { DEFAULT_BUTTON } from "./elements/CssUtils";
 
 type MenuState = "main" | "local" | "online";
 
@@ -11,9 +10,6 @@ export default class PlayPage extends Page {
 
   constructor(router: Router) {
     super(router);
-    if (!APP.userInfo) {
-      throw new NavError(401);
-    }
   }
 
   content(): AElement[] {

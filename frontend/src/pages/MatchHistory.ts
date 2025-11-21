@@ -1,6 +1,6 @@
 import { API, GameResultExt, UserInfo } from "../Api";
 import { APP, getUsername } from "../App";
-import Router, { NavError } from "../Router";
+import Router from "../Router";
 import { Paragraph } from "./elements/Elements";
 import { paths as ApiPaths } from "../PublicAPI";
 import { userFromMaybeId } from "../Util";
@@ -20,8 +20,7 @@ export default class MatchHistoryPage extends AListPage {
       titleForUser("Match history", getUsername() ?? ""),
     );
 
-    const username = getUsername();
-    if (!username) throw new NavError(401);
+    const username = getUsername()!;
     this.username = username;
   }
 
