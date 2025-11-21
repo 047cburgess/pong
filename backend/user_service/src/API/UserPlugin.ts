@@ -5,6 +5,7 @@ import { GetUserDataCommand } from "../Commands/GetUserDataCommand";
 import { EditUsernameCommand } from "../Commands/EditUsernameCommand";
 import { RemoveUserCommand } from "../Commands/RemoveUserCommand";
 import { initializeCommand } from "../Commands/InitializeCommand";
+import { OnUserSeenCommand } from "../Commands/OnUserSeenCommand";
 
 export async function userPlugin(server: FastifyInstance) {
 
@@ -49,7 +50,9 @@ export async function userPlugin(server: FastifyInstance) {
 		const username = (request.body as { username: string }).username;
 		const result = CommandManager.get(EditUsernameCommand).execute(user_id, username!);
 		if (result.success)
+		{
 			return reply.status(204).send();
+		}
 		else
 			return reply.status(404).send(result.errors);
 	});

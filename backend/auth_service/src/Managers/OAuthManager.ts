@@ -9,6 +9,8 @@ import { DbManager } from './DbManager';
 import { TwoFAManager } from './TwoFAManager';
 import { TwoFactorRequiredError } from '../Errors/TwoFactorRequiredError';
 import { AuthManager } from './AuthManager';
+import { UsernameUtils } from '../Utils/UsernameUtils';
+import { generateUsername } from '../Utils/UsernameGenerator';
 
 // Définir la structure de la réponse d'échange de token (pour la clarté)
 interface GitHubTokenResponse {
@@ -148,11 +150,34 @@ export class OAuthManager {
 				TwoFA: 0
 			};
 			localUserId = credentials.id
-			AuthManager.getInstance().notifyUserDataService(credentials.id, credentials.username, userProfile.avatar_url);
-			db.createUserWithOAuth(credentials);
+			const errors = UsernameUtils.validateUsername(credentials.username).errors;
+			if (errors.length)
+				credentials.username = generateUsername(Date.now());
+			try{
+				AuthManager.getInstance().notifyUserDataService(credentials.id, credentials.username, userProfile.avatar_url);
+				this.trycreateOauthUser(credentials);
+			}
+			catch {
+				credentials.username = generateUsername(Date.now());
+				AuthManager.getInstance().notifyUserDataService(credentials.id, credentials.username, userProfile.avatar_url);
+				this.trycreateOauthUser(credentials);
+			}
 		}
 		return JWTManager.getInstance().generateJWT(localUserId);
 	}
+
+	public trycreateOauthUser(credentials: OauthCredentialsInfo): void {
+		try {
+			DbManager.getInstance(undefined).createUserWithOAuth(credentials);;
+		}
+		catch (e: any) {
+			if (e.code === 'SQLITE_CONSTRAINT' || e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+				throw ApiError.BadRequest("ALREADY_EXIST", []);
+			}
+			throw e;
+		}
+	}
+
 
 	private async fetchGitHubUserProfile(accessToken: string): Promise<GitHubProfileResponse> {
 		const response = await fetch(this.GITHUB_USER_URL, {

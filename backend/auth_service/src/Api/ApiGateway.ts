@@ -1,11 +1,12 @@
 import fastifyHttpProxy from '@fastify/http-proxy'
 import { FastifyInstance } from "fastify"
-import { JwtCookieChecker, OnSendHandler } from './Hanlders';
+import { JwtCookieChecker, OnSendHandler, preHandlerHandler } from './Hanlders';
 import { on } from 'events';
 
 export async function apiGateway(server: FastifyInstance) {
 
 	server.addHook("onRequest", JwtCookieChecker);
+	//server.addHook("preHandler", preHandlerHandler);
 
 	server.register(fastifyHttpProxy, {
 		upstream: `${process.env.MATCHMAKING_SERVICE}`,
@@ -33,12 +34,6 @@ export async function apiGateway(server: FastifyInstance) {
 	});
 
 	server.register(fastifyHttpProxy, {
-		upstream: `${process.env.USER_SERVICE}`,
-		prefix: "/users/:username",
-		rewritePrefix: "/users/:username",
-	});
-
-	server.register(fastifyHttpProxy, {
 		upstream: `${process.env.MATCHMAKING_SERVICE}`,
 		prefix: "/user/games",
 		rewritePrefix: "/user/games",
@@ -62,12 +57,25 @@ export async function apiGateway(server: FastifyInstance) {
 		rewritePrefix: "/tournaments",
 	});
 
-	server.addHook("onSend", OnSendHandler);
+	server.addHook('onSend', OnSendHandler);
+
+	server.register(fastifyHttpProxy,{
+		upstream: `${process.env.USER_SERVICE}`,
+		prefix: "/user/username",
+		rewritePrefix: '/user/username',
+		preValidation : preHandlerHandler,
+	});
 
 	server.register(fastifyHttpProxy, {
 		upstream: `${process.env.USER_SERVICE}`,
 		prefix: "/user",
 		rewritePrefix: '/user',
+	});
+
+	server.register(fastifyHttpProxy, {
+		upstream: `${process.env.USER_SERVICE}`,
+		prefix: "/users",
+		rewritePrefix: '/users',
 	});
 
 	server.register(fastifyHttpProxy, {

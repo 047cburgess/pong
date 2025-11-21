@@ -51,17 +51,24 @@ export const authErrorHandler = (error: unknown, request: FastifyRequest, reply:
 };
 
 
+
+export const preHandlerHandler = (request: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction) => {
+	if(request.method === `PUT` && request.url === `/user/username`)
+	{
+		const username = (request.body as {username : string}).username;
+		console.log(`username : ${username}`);
+		AuthManager.getInstance().updateUsername(Number(request.headers['x-user-id']), username); 
+	}
+	done();
+};
+
+
 export const OnSendHandler = (request: FastifyRequest, reply: FastifyReply, payload: any, done: HookHandlerDoneFunction) => 
 {
 	if(request.method === `DELETE` && reply.statusCode === 204 && request.url === `/user`)
 	{
 		reply.clearCookie("jwt", { path: "/" });
 		AuthManager.getInstance().deleteUserData(Number(request.headers['x-user-id']));
-	}
-	if(request.method === `PUT` && reply.statusCode === 200 && request.url === `/user/username`)
-	{
-		AuthManager.getInstance().updateUsername(Number(request.headers['x-user-id']), JSON.parse(payload).username);
-		
 	}
 	done();
 };
