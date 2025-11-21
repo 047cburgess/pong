@@ -265,10 +265,10 @@ export default class DashboardPage extends Page {
         `Wins: <span class="text-white">${this.stats?.lifetime.wins ?? ".."}</span>`,
       ),
       new Paragraph(
-        `Draws: <span class="text-white">${this.stats?.lifetime.losses ?? ".."}</span>`,
+        `Draws: <span class="text-white">${this.stats?.lifetime.draws ?? ".."}</span>`,
       ),
       new Paragraph(
-        `Losses: <span class="text-white">${this.stats?.lifetime.draws ?? ".."}</span>`,
+        `Losses: <span class="text-white">${this.stats?.lifetime.losses ?? ".."}</span>`,
       ),
     );
     return new Div(
