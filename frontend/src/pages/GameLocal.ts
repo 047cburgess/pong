@@ -15,19 +15,12 @@ import {
   DEFAULT_BUTTON,
   TIMER_COUNTDOWN,
   TIMER_NORMAL,
+  PLAYER_COLOURS,
 } from "./elements/CssUtils";
 import { PongApp } from "../game/PongGame";
 import { PlayerAvatar, GameHUD, ColoredText } from "./elements/GameElements";
 
 type GameState = "setup" | "waiting" | "playing" | "finished";
-
-// Player colours matching paddle colours
-const PLAYER_COLOURS = [
-  "rgb(212, 107, 163)", // Pink
-  "rgb(163, 212, 107)", // Green
-  "rgb(107, 163, 212)", // Blue
-  "rgb(212, 212, 54)", // Yellow
-];
 
 export default class GameLocalPage extends Page {
   private gameState: GameState = "setup";

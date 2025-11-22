@@ -6,27 +6,40 @@ export class PlayerAvatar extends AContainer {
   scoreId: string;
   color: string;
   align: "left" | "right";
+  avatarUrl?: string;
 
   constructor(
     playerName: string,
     scoreId: string,
     color: string,
     align: "left" | "right" = "left",
+    avatarUrl?: string,
   ) {
     super();
     this.playerName = playerName;
     this.scoreId = scoreId;
     this.color = color;
     this.align = align;
+    this.avatarUrl = avatarUrl;
   }
 
   render(): string {
-    const avatar = new Div()
-      .class("w-10 h-10 min-w-10 min-h-10")
-      .class(AVATAR_DIV)
-      .withStyle(
-        `background: ${this.color}; outline: 2px solid ${this.color};`,
-      );
+    // If avatar URL exists, show profile picture with colored outline
+    // Otherwise show solid colored circle (for local games with guests)
+    const avatar =
+      this.avatarUrl ?
+        new Div()
+          .class("w-10 h-10 min-w-10 min-h-10")
+          .class(AVATAR_DIV)
+          .withStyle(
+            `background-image: url('${this.avatarUrl}'); background-size: cover; background-position: center; outline: 2px solid ${this.color};`,
+          )
+      : new Div()
+          .class("w-10 h-10 min-w-10 min-h-10")
+          .class(AVATAR_DIV)
+          .withStyle(
+            `background: ${this.color}; outline: 2px solid ${this.color};`,
+          );
 
     const nameText = new Paragraph(this.playerName).class(
       "font-bold text-white",
@@ -65,7 +78,7 @@ export class GameTimer extends AElement {
   render(): string {
     return `
       <div class="flex items-center justify-center" ${this.genTags()}>
-        <p class="font-mono font-bold text-5xl text-white" id="${this.id}">00:00</p>
+        <p class="font-bold text-5xl text-white" id="${this.id}">00:00</p>
       </div>
     `;
   }
@@ -114,14 +127,19 @@ export class GameHUD extends AElement {
 }
 
 export class GameOverlay extends AContainer {
-  constructor(...contents: AElement[]) {
+  contentBoxClasses: string;
+
+  constructor(contentBoxClasses: string = "", ...contents: AElement[]) {
     super(...contents);
+    // Default classes + any custom classes passed in
+    this.contentBoxClasses =
+      `bg-black/80 backdrop-blur-md p-12 rounded-xl outline outline-2 outline-pink-500 ${contentBoxClasses}`.trim();
   }
 
   render(): string {
     return `
-      <div class="absolute inset-0 flex items-center justify-center bg-black/50" ${this.genTags()}>
-        <div class="bg-black/80 backdrop-blur-md p-12 rounded-xl outline outline-2 outline-pink-500">
+      <div class="absolute inset-0 flex items-center justify-center" ${this.genTags()}>
+        <div class="${this.contentBoxClasses}">
           ${this.renderContents()}
         </div>
       </div>

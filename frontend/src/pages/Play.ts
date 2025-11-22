@@ -151,7 +151,7 @@ export default class PlayPage extends Page {
         .class("w-full max-w-md")
         .withId("btn-online-quick")
         .withOnclick(() => {
-          this.router.navigate("/queue/join");
+          this.router.navigate("/queue");
         }),
 
       // Custom game
