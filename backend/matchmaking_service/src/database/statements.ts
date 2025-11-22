@@ -198,10 +198,69 @@ export function prepareStatements(db: Database.Database) {
     `),
 
     getLocalTournamentsByPlayer: db.prepare(`
-      SELECT *
-      FROM local_tournaments
-      WHERE host_id = ?
-      ORDER BY date DESC
+      SELECT
+        lt.tournament_id,
+        lt.host_id,
+        lt.guest1_name,
+        lt.guest2_name,
+        lt.guest3_name,
+        lt.winner_type,
+        lt.winner_name,
+        lt.date,
+        lt.semi1_id,
+        lt.semi2_id,
+        lt.final_id,
+        (
+          SELECT json_object(
+            'gameId', lg.game_id,
+            'players', json_group_array(
+              json_object(
+                'id', CASE WHEN lgp.guest_name IS NULL THEN lg.host_id ELSE lgp.guest_name END,
+                'score', lgp.score
+              )
+            ),
+            'winnerId', CASE WHEN lg.winner_type = 'host' THEN lg.host_id ELSE lg.winner_guest_name END,
+            'duration', lg.duration
+          )
+          FROM local_games lg
+          JOIN local_game_participants lgp ON lg.game_id = lgp.game_id
+          WHERE lg.game_id = lt.semi1_id
+        ) AS semifinal1,
+        (
+          SELECT json_object(
+            'gameId', lg.game_id,
+            'players', json_group_array(
+              json_object(
+                'id', CASE WHEN lgp.guest_name IS NULL THEN lg.host_id ELSE lgp.guest_name END,
+                'score', lgp.score
+              )
+            ),
+            'winnerId', CASE WHEN lg.winner_type = 'host' THEN lg.host_id ELSE lg.winner_guest_name END,
+            'duration', lg.duration
+          )
+          FROM local_games lg
+          JOIN local_game_participants lgp ON lg.game_id = lgp.game_id
+          WHERE lg.game_id = lt.semi2_id
+        ) AS semifinal2,
+        (
+          SELECT json_object(
+            'gameId', lg.game_id,
+            'players', json_group_array(
+              json_object(
+                'id', CASE WHEN lgp.guest_name IS NULL THEN lg.host_id ELSE lgp.guest_name END,
+                'score', lgp.score
+              )
+            ),
+            'winnerId', CASE WHEN lg.winner_type = 'host' THEN lg.host_id ELSE lg.winner_guest_name END,
+            'duration', lg.duration
+          )
+          FROM local_games lg
+          JOIN local_game_participants lgp ON lg.game_id = lgp.game_id
+          WHERE lg.game_id = lt.final_id
+        ) AS final
+      FROM local_tournaments lt
+      WHERE lt.host_id = ?
+      ORDER BY lt.date DESC
       LIMIT ? OFFSET ?
     `),
   };

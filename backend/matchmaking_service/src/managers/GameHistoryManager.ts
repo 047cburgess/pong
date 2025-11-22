@@ -80,6 +80,11 @@ export class GameHistoryManager {
 			finalId: row.final_id,
 			winnerType: row.winner_type,
 			winnerName: row.winner_name,
+			games: {
+				semifinal1: JSON.parse(row.semifinal1),
+				semifinal2: JSON.parse(row.semifinal2),
+				final: JSON.parse(row.final),
+			},
 		};
 	}
 
