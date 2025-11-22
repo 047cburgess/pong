@@ -89,6 +89,7 @@ class App {
     this.router.addRoute("settings", SettingsPage);
     this.router.addRoute("play", PlayPage);
     this.router.addRoute("games/local", GameLocalPage);
+    this.router.addRoute("games/create", CustomGamePage);
     this.router.addRoute("queue", QueuePage);
 
     this.router.navigate(location.pathname + location.search, false);

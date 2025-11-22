@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { optimize } = require('webpack');
 
 module.exports = {
   entry: './src/App.ts',
@@ -28,6 +29,11 @@ module.exports = {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
   },
+//cause otherwise it freezes my vm
+  optimization: {
+		minimize: false,
+	},
+
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/index.html',

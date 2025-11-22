@@ -202,7 +202,10 @@ export class CustomGamePage extends Page {
       };
     this.PlayerCards.set(
       "player-0",
-      new PlayerCard(APP.userInfo?.username, this.onClick.bind(this))
+      new PlayerCard(
+        APP.userInfo as UserInfo | undefined,
+        this.onClick.bind(this),
+      )
         .withId("player-0")
         .withStyle("top: 10px; left: 10px; width:45%; height:45%;")
         .class("absolute") as PlayerCard,
@@ -291,9 +294,7 @@ export class PlayerCard extends Div {
   	`;
   private _id = Math.random().toString(36).substring(2, 15);
   private waitInterval: any = null;
-  private waitingParagraph: Paragraph = new Paragraph("Waiting...")
-    .class("text-white font-bold text-xs break-words")
-    .withStyle("max-width: 80%;") as Paragraph;
+
   private overlayPlus: Button = new Button(
     new Div(
       new Paragraph("+")
@@ -311,53 +312,57 @@ export class PlayerCard extends Div {
     .class(this.BACKGROUND_STYLE)
     .class(this.CONTENT_STYLE) as Div;
 
-  private Waiting_contents: AElement[] = [
-    new Div(
-      new Image("/api/v1/user/avatars/" + ".webp").class("absolute z-0"),
-    ).class(AVATAR_DIV),
-    this.waitingParagraph,
-  ];
+  private avatarImage: Image;
+  private avatarDiv: Div;
+  private waitingParagraph: Paragraph;
+  private waitingDiv: Div;
 
-  isfulled: boolean = false;
+  isfulled: boolean = this.playerInfo != undefined;
 
   constructor(
-    playerName: string = "Waiting...",
+    private playerInfo?: UserInfo,
     private onClick?: () => void,
   ) {
     super();
 
+    this.avatarImage = new Image(
+      this.playerInfo?.avatarUrl ?? "/api/v1/user/avatars/default.webp",
+    ).class("absolute z-0") as Image;
+
+    this.avatarDiv = new Div(this.avatarImage).class(AVATAR_DIV) as Div;
+
+    this.waitingParagraph = new Paragraph(
+      this.playerInfo?.username ?? "Waiting...",
+    )
+      .class("text-white font-bold text-xs")
+      .withId("Playercard-text-section" + this._id) as Paragraph;
+
+    this.waitingDiv = new Div(this.waitingParagraph).withStyle(
+      "max-width: 80%;",
+    ) as Div;
+
     this.withId("player-card" + this._id);
-    if (playerName === "Waiting...") {
+    this.mainContents.addContent([this.avatarDiv, this.waitingDiv]);
+
+    this.contents = [this.mainContents];
+
+    if (!this.isfulled) {
       this.setWaiting();
-      this.overlayPlus.renderContents();
     } else {
-      this.setPlayer(playerName);
+      this.setPlayer();
     }
   }
 
-  setPlayer(name: string) {
+  setPlayer() {
     this.isfulled = true; // → ce que tu as demandé : set à true
     this.killWaitingDots(); // → tuer l’interval
     this.unbindHoverEffect(); // → retirer le hover
-    this.mainContents.addContent([
-      new Div(
-        new Image("/api/v1/user/avatars/" + name + ".webp").class(
-          "absolute z-0",
-        ),
-      ).class(AVATAR_DIV),
-      new Paragraph(name)
-        .class("text-white font-bold text-xs")
-        .withStyle(`max-width: 80%;`),
-    ]);
-    this.contents = [this.mainContents];
     this.redrawInner();
   }
 
   setWaiting() {
     this.animateWaitingDots();
     this.bindHoverEffect();
-    this.mainContents.addContent(this.Waiting_contents);
-    this.contents = [this.mainContents];
     this.class("grayscale");
   }
 
@@ -366,8 +371,7 @@ export class PlayerCard extends Div {
     this.waitInterval = setInterval(() => {
       count = (count + 1) % 4;
       const dots = ".".repeat(count);
-      this.waitingParagraph.text = `Waiting${dots}`;
-      this.mainContents.redrawInner();
+      this.waitingParagraph.set_TextContent(`Waiting${dots}`);
     }, 500);
   }
 
@@ -383,16 +387,18 @@ export class PlayerCard extends Div {
       const el = this.byId();
       if (!el) return;
 
-      this.withOnHover(() => {
+      this.withOnEnter(() => {
+        console.log("PlayerCard OnMouseEnter"); //debug
         this.mainContents.class("blur-xs");
-        this.addContent(this.overlayPlus);
-        this.redrawInner();
+        this.mainContents.update_classes();
+        this.addContentWithAppend(this.overlayPlus);
       });
 
       this.withOnLeave(() => {
+        console.log("PlayerCard OnMouseLeave"); //debug
         this.mainContents.removeClass("blur-xs");
-        this.removeContent(this.overlayPlus);
-        this.redrawInner();
+        this.mainContents.update_classes();
+        this.UnAppendContent(this.overlayPlus);
       });
 
       this.withOnclick(this.onClick ?? (() => {}));
@@ -404,8 +410,8 @@ export class PlayerCard extends Div {
     const el = this.byId();
     if (!el) return;
 
-    el.onmouseenter = null;
-    el.onmouseleave = null;
+    this.withOnEnter(() => {});
+    this.withOnLeave(() => {});
   }
 
   private killWaitingDots() {
