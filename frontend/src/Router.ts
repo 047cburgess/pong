@@ -5,7 +5,11 @@ import { AElement } from "./pages/elements/Elements";
 export abstract class Page {
   readonly router: Router;
 
-  constructor(router: Router, needsAuth: boolean = true) {
+  constructor(
+    router: Router,
+    needsAuth: boolean = true,
+    protected Options?: any,
+  ) {
     if (needsAuth && !APP.userInfo) {
       throw new NavError(401);
     }
@@ -40,7 +44,8 @@ export class NavError extends Error {
 }
 
 export default class Router {
-  private routes: { [key: string]: new (r: Router) => Page } = {};
+  private routes: { [key: string]: new (r: Router, Options?: any) => Page } =
+    {};
   private errors: { [key: string | number]: new (r: Router) => Page } = {};
   private rootElement: HTMLElement;
 
@@ -64,7 +69,11 @@ export default class Router {
     this.errors[err] = pageCtor;
   }
 
-  navigate(path: string | number, pushState: boolean = true): void {
+  navigate(
+    path: string | number,
+    pushState: boolean = true,
+    ctorOptions?: any,
+  ): void {
     if (this.navPending) {
       return;
     }
@@ -123,7 +132,7 @@ export default class Router {
       delete this.navPending;
       if (page) {
         try {
-          this.currentPage = new page(this);
+          this.currentPage = new page(this, ctorOptions);
         } catch (e) {
           if (e instanceof NavError) {
             if (this.errors[e.error]) {

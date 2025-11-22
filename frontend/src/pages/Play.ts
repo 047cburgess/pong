@@ -1,5 +1,12 @@
 import Router, { Page } from "../Router";
-import { AElement, Div, Paragraph, Button, Header } from "./elements/Elements";
+import {
+  AElement,
+  Div,
+  Paragraph,
+  Button,
+  Header,
+  AContainer,
+} from "./elements/Elements";
 import { DEFAULT_BUTTON } from "./elements/CssUtils";
 
 type MenuState = "main" | "local" | "online";
@@ -7,9 +14,11 @@ type MenuState = "main" | "local" | "online";
 export default class PlayPage extends Page {
   private menuState: MenuState = "main";
   private menuContainer: Div = new Div();
+  private onlinemenu: Online_Menu;
 
   constructor(router: Router) {
     super(router);
+    this.onlinemenu = new Online_Menu(router, this.OnlineClickBack.bind(this));
   }
 
   content(): AElement[] {
@@ -135,66 +144,117 @@ export default class PlayPage extends Page {
         }),
     ).class("flex flex-col gap-4 w-full max-w-2xl");
   }
-
   private renderOnlineMenu(): AElement {
-    return new Div(
-      // Quick random 2 player
-      new Button(
-        new Div(
-          new Header(2, "Quick Match").class("text-xl font-bold"),
-          new Paragraph("1v1 Random opponent").class(
-            "text-neutral-400 text-sm",
-          ),
-        ).class("flex flex-col items-center gap-2 py-4 px-8"),
-      )
-        .class(DEFAULT_BUTTON)
-        .class("w-full max-w-md")
-        .withId("btn-online-quick")
-        .withOnclick(() => {
-          this.router.navigate("/queue");
-        }),
+    return this.onlinemenu;
+  }
 
-      // Custom game
-      new Button(
-        new Div(
-          new Header(2, "Custom Game").class("text-xl font-bold"),
-          new Paragraph("2-4 players, invite friends").class(
-            "text-neutral-400 text-sm",
-          ),
-        ).class("flex flex-col items-center gap-2 py-4 px-8"),
-      )
-        .class(DEFAULT_BUTTON)
-        .class("w-full max-w-md")
-        .withId("btn-online-custom")
-        .withOnclick(() => {
-          this.router.navigate("/games/create");
-        }),
+  private OnlineClickBack() {
+    this.menuState = "main";
+    this.renderMenu();
+  }
+}
 
-      // Online tournament
-      new Button(
-        new Div(
-          new Header(2, "Tournament").class("text-xl font-bold"),
-          new Paragraph("Create a 4pl tournament").class(
-            "text-neutral-400 text-sm",
-          ),
-        ).class("flex flex-col items-center gap-2 py-4 px-8"),
-      )
-        .class(DEFAULT_BUTTON)
-        .class("w-full max-w-md")
-        .withId("btn-online-tournament")
-        .withOnclick(() => {
-          this.router.navigate("/tournaments/create");
-        }),
+export class Online_Menu extends Div {
+  private QuickMatchButton: Button = new Button(
+    new Div(
+      new Header(2, "Quick Match").class("text-xl font-bold"),
+      new Paragraph("1v1 Random opponent").class("text-neutral-400 text-sm"),
+    ).class("flex flex-col items-center gap-2 py-4 px-8"),
+  )
+    .class(DEFAULT_BUTTON)
+    .class("w-full max-w-md")
+    .withId("btn-online-quick")
+    .withOnclick(() => {
+      this.router.navigate("/queue");
+    }) as Button;
 
-      // Back button
-      new Button(new Paragraph("Back").class("py-3 px-8"))
+  private CustomGameButton: Button = new Button(
+    new Div(
+      new Header(2, "Custom Game").class("text-xl font-bold"),
+      new Paragraph("2-4 players, invite friends").class(
+        "text-neutral-400 text-sm",
+      ),
+    ).class("flex flex-col items-center gap-2 py-4 px-8"),
+  )
+    .class(DEFAULT_BUTTON)
+    .class("w-full max-w-md")
+    .withId("btn-online-custom")
+    .withOnclick(this.OnClickCustom.bind(this)) as Button;
+
+  private custom_selection_buttons: AElement[];
+  private customGameDiv = new Div()
+    .withId("Play-OnlineMenu-customgamebutton-div")
+    .class("flex flex-row gap-4 w-full justify-center max-w-md") as Div;
+
+  private Online_TournamentBTn = new Button(
+    new Div(
+      new Header(2, "Tournament").class("text-xl font-bold"),
+      new Paragraph("Create a 4pl tournament").class(
+        "text-neutral-400 text-sm",
+      ),
+    ).class("flex flex-col items-center gap-2 py-4 px-8"),
+  )
+    .class(DEFAULT_BUTTON)
+    .class("w-full max-w-md")
+    .withId("btn-online-tournament")
+    .withOnclick(() => {
+      this.router.navigate("/tournaments/create");
+    }) as Button;
+
+  private Back_button = new Button(new Paragraph("Back").class("py-3 px-8"))
+    .class(DEFAULT_BUTTON)
+    .class("w-full max-w-md mt-4 opacity-70 hover:opacity-100")
+    .withId("btn-back-online") as Button;
+  private mainDiv = new Div()
+    .class("flex flex-col gap-4 w-full max-w-2xl")
+    .withId("Play-OnlineMenu-main-div") as Div;
+
+  constructor(
+    private router: Router,
+    private backmethod: () => any,
+  ) {
+    super();
+    this.Back_button = this.Back_button.withOnclick(this.backmethod) as Button;
+
+    this.custom_selection_buttons = [2, 3, 4].map((i) =>
+      new Button(new Paragraph(`${i}j`).class("w-full text-center"))
         .class(DEFAULT_BUTTON)
-        .class("w-full max-w-md mt-4 opacity-70 hover:opacity-100")
-        .withId("btn-back-online")
-        .withOnclick(() => {
-          this.menuState = "main";
-          this.renderMenu();
-        }),
-    ).class("flex flex-col gap-4 w-full max-w-2xl");
+        .withOnclick(() => this.navigator(i))
+        .class("w-full py-4"),
+    );
+
+    this.mainDiv.addContentWithAppend([
+      this.QuickMatchButton,
+      this.customGameDiv,
+      this.Online_TournamentBTn,
+      this.Back_button,
+    ]);
+    this.customGameDiv.addContentWithAppend(this.CustomGameButton);
+    this.contents = [this.mainDiv];
+  }
+
+  OnclickBack() {
+    this.resetCustom();
+    this.backmethod();
+  }
+
+  OnClickCustom() {
+    this.customGameDiv.UnAppendContent(this.CustomGameButton);
+    this.customGameDiv.addContentWithAppend(this.custom_selection_buttons);
+    this.customGameDiv.bindEvents();
+  }
+
+  resetCustom() {
+    this.customGameDiv.addContentWithAppend(this.CustomGameButton);
+    this.custom_selection_buttons.forEach((b) =>
+      this.customGameDiv.UnAppendContent(b),
+    );
+    this.customGameDiv.bindEvents();
+  }
+
+  navigator(i: number) {
+    console.log("onclick");
+    this.resetCustom();
+    this.router.navigate("/games/create", true, { nb_player: i });
   }
 }

@@ -323,7 +323,7 @@ export abstract class AContainer extends AElement {
     return this;
   }
 
-  AppendContent(content: AElement) {
+  private AppendContent(content: AElement) {
     const self = this.byId();
     if (!self) return;
 

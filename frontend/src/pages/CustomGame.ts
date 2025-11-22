@@ -191,7 +191,7 @@ export class CustomGamePage extends Page {
   private Invite_menu: InviteMenu = new InviteMenu();
 
   constructor(router: Router, isHost = false) {
-    super(router);
+    super(router, false);
     this.isHost = isHost;
     if (isHost)
       this.playerSlots[0] = {
@@ -354,9 +354,9 @@ export class PlayerCard extends Div {
   }
 
   setPlayer() {
-    this.isfulled = true; // → ce que tu as demandé : set à true
-    this.killWaitingDots(); // → tuer l’interval
-    this.unbindHoverEffect(); // → retirer le hover
+    this.isfulled = true;
+    this.killWaitingDots();
+    this.unbindHoverEffect();
     this.redrawInner();
   }
 
@@ -364,6 +364,10 @@ export class PlayerCard extends Div {
     this.animateWaitingDots();
     this.bindHoverEffect();
     this.class("grayscale");
+  }
+
+  update(userInfo?: UserInfo) {
+    this.playerInfo = userInfo;
   }
 
   private animateWaitingDots() {
