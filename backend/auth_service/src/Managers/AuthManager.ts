@@ -32,9 +32,13 @@ export class AuthManager {
 		const credentials = this.db.getUserById(userId);
 		if (!credentials)
 			throw ApiError.NotFound("USER_NOT_FOUND", []);
-
+		const errors = UsernameUtils.validateUsername(newUsername).errors;
+		if (errors.length)
+			throw ApiError.BadRequest("INVALID_USERNAME", errors);
+		console.log(`userid : ${userId}`);
+		console.log(`username : ${newUsername}`);
 		credentials.username = newUsername;
-		this.db.updateUser(userId, credentials);
+		this.tryUpdateCredentials(userId, credentials);
 	}
 	//credential is either mail or username
 	async login(credential: string, password: string): Promise<string> {
@@ -44,6 +48,7 @@ export class AuthManager {
 		if (!user || !await PasswordUtils.compare(password, user.password)) {
 			throw ApiError.Unauthorized("AUTHENTIFICATION_FAILED", "Nom d'utilisateur ou mot de passe incorrect.");
 		}
+
 
 		if (user.TwoFA) {
 			const token = this.twoFA.generateAndStoreCode(user.id);
@@ -58,7 +63,7 @@ export class AuthManager {
 		return jwt;
 	}
 
-	async notifyUserDataService(userId : number, username : string, avatarUrl?:string) {
+	async notifyUserDataService(userId: number, username: string, avatarUrl?: string) {
 		const endpoint = `${process.env.USER_SERVICE}/internal/user/initialize`;
 
 		const response = await fetch(endpoint, {
@@ -66,7 +71,7 @@ export class AuthManager {
 			headers: {
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify({ user_id : userId, username : username, avatarUrl: avatarUrl})
+			body: JSON.stringify({ user_id: userId, username: username, avatarUrl: avatarUrl })
 		});
 
 		if (!response.ok) {
@@ -160,6 +165,30 @@ export class AuthManager {
 			throw e;
 		}
 	}
+
+	public tryUpdateCredentials(userId: number, credentials: CommonCredentialsInfo): void {
+		try {
+			this.db.updateUser(userId, credentials);
+		}
+		catch (e: any) {
+			if (e.code === 'SQLITE_CONSTRAINT' || e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+				const conflictDetails: string[] = [];
+
+				if (e.message.includes('username')) {
+					conflictDetails.push("USERNAME_ALREADY_IN_USE");
+				}
+				if (e.message.includes('email')) {
+					conflictDetails.push("EMAIL_ALREADY_IN_USE");
+				}
+
+				if (conflictDetails.length > 0) {
+					throw ApiError.BadRequest("ALREADY_EXIST", conflictDetails);
+				}
+			}
+			throw e;
+		}
+	}
+
 
 	public deleteUserData(userId: number): void {
 		this.db.deleteUserById(userId);
