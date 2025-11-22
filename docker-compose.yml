@@ -10,21 +10,35 @@ services:
     depends_on:
       - auth-service
 
-  game-service:
-    build: ./backend/game_service
-    container_name: game-service
-    volumes:
-      - ./backend/game_service:/app
-      - /app/node_modules
+  auth-service:
+    build:
+      context: ./backend/auth_service
+      dockerfile: Dockerfile
+    container_name: auth-service
     networks:
       - transcendence
+    volumes:
+      - auth-service-data:/app/data
+    restart: unless-stopped
     environment:
       - TZ=${TZ}
-      - LISTEN_PORT=${LISTEN_PORT}
-      - MATCHMAKING_URL=${MATCHMAKING_SERVICE_URL}
-      - LOG_LEVEL=${LOG_LEVEL}
       - NODE_ENV=${NODE_ENV}
-    command: npm run dev
+      - LOG_LEVEL=${LOG_LEVEL}
+      - DB_VERBOSE=${DB_VERBOSE}
+      - SECRET=${SECRET}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+      - MATCHMAKING_SERVICE=${MATCHMAKING_SERVICE_URL}
+      - USER_SERVICE=${USER_SERVICE_URL}
+      - GAME_SERVICE_URL=${GAME_SERVICE_URL}
+    depends_on:
+      - user-service
+      - matchmaking-service
 
   matchmaking-service:
     build: ./backend/matchmaking_service
@@ -45,6 +59,24 @@ services:
       - GAME_SERVICE_URL=${GAME_SERVICE_URL}
       - SERVICE_URL=${MATCHMAKING_SERVICE_URL}
     command: npm run dev
+    depends_on:
+      - game-service
+
+  game-service:
+    build: ./backend/game_service
+    container_name: game-service
+    volumes:
+      - ./backend/game_service:/app
+      - /app/node_modules
+    networks:
+      - transcendence
+    environment:
+      - TZ=${TZ}
+      - LISTEN_PORT=${LISTEN_PORT}
+      - MATCHMAKING_URL=${MATCHMAKING_SERVICE_URL}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - NODE_ENV=${NODE_ENV}
+    command: npm run dev
 
   user-service:
     build: 
@@ -56,34 +88,6 @@ services:
     volumes:
       - user-service-data:/app/data
     restart: unless-stopped
-  
-  auth-service:
-    build:
-      context: ./backend/auth_service
-      dockerfile: Dockerfile
-    container_name: auth-service
-    networks:
-      - transcendence
-    volumes:
-      - auth-service-data:/app/data
-    restart: unless-stopped
-    environment:
-      - TZ=${TZ}
-      - NODE_ENV=${NODE_ENV}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - DB_VERBOSE=${DB_VERBOSE}
-      - SECRET=${SECRET}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
-      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - SMTP_FROM=${SMTP_FROM}
-      - MATCHMAKING_SERVICE=${MATCHMAKING_SERVICE_URL}
-      - USER_SERVICE=${USER_SERVICE_URL}
-      - GAME_SERVICE_URL=${GAME_SERVICE_URL}
 
 volumes:
   user-service-data: {}
