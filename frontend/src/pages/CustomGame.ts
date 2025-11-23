@@ -12,11 +12,19 @@ import {
 import {
   AVATAR_DIV,
   DEFAULT_BUTTON,
+  DEFEAT_COLOR,
+  DRAW_COLOR,
   HOW_TO_CENTER_A_DIV,
   INPUT_BOX_OUTLINE,
   INPUT_BOX_RED_OUTLINE,
+  PLAYER_COLOURS,
+  TIMER_COUNTDOWN,
+  TIMER_NORMAL,
+  VICTORY_COLOR,
 } from "./elements/CssUtils";
 import { API, UserInfo } from "../Api";
+import { GameHUD, GameOverlay, PlayerAvatar } from "./elements/GameElements";
+import { PongApp } from "../game/PongGame";
 
 type PlayerSlot = {
   id?: number; // id du joueur si déjà rempli
@@ -25,37 +33,126 @@ type PlayerSlot = {
   isHost?: boolean;
 };
 
-export class WaitingMenu extends Div {
-  private PLAYERCONTAINER_CLASS = `relative w-full h-full bg-zinc-700/50 rounded-2xl outline outline-2 outline-gray-400/50 shadow-lg`;
+export interface gameKeys {
+  key: string;
+  gameId: string;
+  expires: string;
+}
 
-  private header: Header = new Header(2, "Custom Game").class(
+export type PageArgs = gameKeys & { nb_players: number };
+
+/*===================================================================
+
+
+	.1WatingMenu
+
+
+
+===================================================================*/
+
+export class WaitingMenu extends GameOverlay {
+  private PLAYERCONTAINER_CLASS = `relative w-full h-96 mb-6`;
+  private static readyPid: Set<number> = new Set();
+
+  private header: Header = new Header(2, "Lobby").class(
     "text-3xl font-bold m-0 mb-6 text-center",
   ) as Header;
+
   private playerContainer: Div = new Div()
-    .withStyle("width:45%; height:45%; ")
+    .withStyle(" position: relative;")
     .class(this.PLAYERCONTAINER_CLASS)
     .withId("players-container") as Div;
-  private inplayerContainer: AElement[] = [];
 
-  constructor() {
-    super();
+  //feels kinda messy to put all those actions here but idk of a better way
+  constructor(
+    private openInviteMenu: () => any,
+    private Ready: () => any,
+    private Unready?: () => any,
+  ) {
+    super("!w-3/4 !max-w-4xl");
     this.addContent(
       new Div(this.header, this.playerContainer).class(`
-  					flex flex-col justify-center items-center 
-  					w-full h-screen
-				`),
+                    flex flex-col justify-center items-center 
+                    w-full h-full
+                `),
     );
-    //this.class("flex flex-col justify-center items-center min-h-screen p-12");
   }
 
-  updatePlayerContainer(newContents: AElement[]) {
-    this.playerContainer.addContent(newContents);
-    this.redrawInner();
+  make_playerCards(
+    ownId: number,
+    Users: { pid: number; User: UserInfo }[],
+    nb_players: number,
+  ) {
+    this.playerContainer.contents = [];
+    console.log(JSON.stringify(Users));
+    const getPositionStyle = (index: number, total: number): string => {
+      const size = "width: 45%; height: 45%; position: absolute;";
+      if (total === 2) {
+        return index === 0 ?
+            `${size} top: 27.5%; left: 2.5%;`
+          : `${size} top: 27.5%; right: 2.5%;`;
+      } else {
+        const isTop = index < 2;
+        const isLeft = index % 2 === 0;
+        return `${size} ${isTop ? "top: 2.5%;" : "bottom: 2.5%;"} ${isLeft ? "left: 2.5%;" : "right: 2.5%;"}`;
+      }
+    };
+    for (let i = 0; i < nb_players; i++) {
+      const style = getPositionStyle(i, nb_players);
+      let color: string | undefined = undefined;
+      let slotClick = () => {};
+      let UserInf: UserInfo | undefined;
+
+      if (Users[i] === undefined) {
+        UserInf = undefined;
+        slotClick = this.openInviteMenu.bind(this);
+      } else {
+        UserInf = Users[i].User;
+
+        if (WaitingMenu.readyPid.has(Users[i].pid)) {
+          //slotClick = this.Unready ?? this.Ready.bind(this);
+          color = "bg-emerald-700/60";
+        } else if (UserInf.id === ownId) {
+          slotClick = this.Ready.bind(this);
+        }
+      }
+      this.playerContainer.addContent(
+        new PlayerCard(UserInf, slotClick, color).withStyle(
+          style,
+        ) as PlayerCard,
+      );
+    }
+    this.playerContainer.redrawInner();
+    this.bindEvents();
+  }
+
+  add_ready(pid: number) {
+    WaitingMenu.readyPid.add(pid);
+  }
+
+  clear_ready() {
+    WaitingMenu.readyPid.clear();
+  }
+
+  delete_ready(pid: number) {
+    WaitingMenu.readyPid.delete(pid);
   }
 }
 
-export class InviteMenu extends Div {
-  private PLAYERCONTAINER_CLASS = `relative w-full h-full bg-zinc-700/50 rounded-2xl outline outline-2 outline-gray-400/50 shadow-lg`;
+export class InviteMenu extends GameOverlay {
+  private static friendState: Map<
+    number,
+    { border: "none" | "blue" | "red" | "green" }
+  > = new Map();
+  static gameId: string = "";
+
+  private MAIN_CONTAINER_CLASS = `
+        flex flex-col 
+        w-full max-w-lg h-[500px] 
+        bg-zinc-800/80 rounded-xl 
+        p-4 gap-4
+        shadow-xl border border-white/10
+    `;
 
   private mockFriends: UserInfo[] = Array.from({ length: 20 }, (_, i) => ({
     id: i + 1,
@@ -66,49 +163,54 @@ export class InviteMenu extends Div {
   }));
 
   private friendElements: AElement[] = [];
+
   private header: Header = new Header(2, "Invite Players").class(
-    "text-3xl font-bold m-0 mb-6 text-center",
+    "text-3xl font-bold m-0 mb-4 text-center text-white drop-shadow-md",
   ) as Header;
 
   private textbar: Textbox = new Textbox("friend-search")
-    .withStyle(
-      `
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 95%;
-            z-index: 10;
-            background-color: rgba(30, 30, 30, 0.9);
-        `,
+    .class(
+      "w-full p-3 rounded-lg text-white bg-zinc-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all",
     )
-    .class("p-2 mb-4 rounded-lg text-white")
     .class(INPUT_BOX_OUTLINE) as Textbox;
 
   private friendContainer: Div = new Div()
-    .class("flex flex-col overflow-y-auto")
-    .withStyle(
-      `
-            width: 95%;
-            margin-top: 60px;
-            height: calc(100% - 60px);
-        `,
+    .class(
+      "flex flex-col overflow-y-auto gap-2 pr-2 scrollbar-thin scrollbar-thumb-gray-600",
     )
     .withId("customgame-friends-container") as Div;
 
-  private MainContainer: Div = new Div(this.textbar, this.friendContainer)
-    .withStyle("width:45%; height:45%; position: relative;")
-    .class(this.PLAYERCONTAINER_CLASS)
-    .withId("customgame-main-container") as Div;
+  private closeButton: Button = new Button(
+    new Paragraph("X").class("text-black text-2xl font-bold leading-none"),
+  )
+    .class(
+      `
+        absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2
+        w-10 h-10 rounded-full 
+        bg-pink-500 hover:bg-pink-400 
+        shadow-lg 
+        flex items-center justify-center 
+        transition-colors duration-200
+        z-50
+    `,
+    )
+    .withId("CloseInvitePanel-Button") as Button;
 
-  constructor() {
-    super();
-    this.addContent(
-      new Div(this.header, this.MainContainer).class(`
-                flex flex-col justify-center items-center 
-                w-full h-screen
-            `),
-    );
+  private MainContainer: Div = new Div(this.textbar, this.friendContainer)
+    .class(this.MAIN_CONTAINER_CLASS)
+    .withId("customgame-invitemain-container") as Div;
+
+  constructor(private onExit: () => any) {
+    super("flex items-center justify-center relative");
+
+    const contentWrapper = new Div(this.header, this.MainContainer).class(`
+            flex flex-col justify-center items-center 
+            w-full p-6 relative
+        `);
+    this.addContent([contentWrapper, this.closeButton]);
+
+    this.closeButton.withOnclick(this.onExit.bind(this));
+
     this.textbar.withOnkeydown((e) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -122,28 +224,95 @@ export class InviteMenu extends Div {
   }
 
   async onEnterSearch(value: string) {
-    console.log("onentersearch");
-    let resp;
+    console.log("onentersearch", value);
     try {
-      resp = await fetch(`/api/v1/user/${value}`, { method: "GET" });
-      // invite player to game
-      console.log("Searched for user:", value);
-    } catch (e: any) {
-      console.log("Error fetching user");
-      return;
+      const resp = await fetch(`/api/v1/users/${value}`, {
+        method: "GET",
+      });
+      if (resp.ok) {
+        const id = ((await resp.json()) as UserInfo).id;
+        await this.invite(id);
+      }
+      this.textbar.removeClass(`focus:ring-pink-500`);
+      this.textbar.class(`focus:ring-blue-500`);
+      this.textbar.update_classes();
+    } catch {
+      console.log("error on search");
+      this.textbar.removeClass(`focus:ring-pink-500`);
+      this.textbar.class(`focus:ring-red-500`);
+      this.textbar.update_classes();
     }
-    if (!resp.ok) {
-      this.textbar.removeClass(INPUT_BOX_OUTLINE);
-      this.textbar.class(INPUT_BOX_RED_OUTLINE);
-      this.redrawInner();
-      console.log("User not found");
-      return;
-    }
-    // search for friends or invite player by name
+    setTimeout(() => {
+      this.textbar.removeClass(`focus:ring-blue-500`);
+      this.textbar.removeClass(`focus:ring-red-500`);
+      this.textbar.class(`focus:ring-pink-500`);
+      this.textbar.update_classes();
+    }, 1000);
+  }
+
+  async invite(id: number) {
+    console.log(id);
+    await fetch(`/api/v1/games/${InviteMenu.gameId}/invite`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        gameId: InviteMenu.gameId,
+        invitedPlayerIds: [id],
+      }),
+    });
+  }
+  /*
+	export type InviteToGameRequest = {
+	gameId: string;
+	invitedPlayerIds: UserId[];
+};
+	*/
+  private async selectFriend(id: number) {
+    const state = InviteMenu.friendState.get(id);
+    if (state && state.border === "green") return;
+    else InviteMenu.friendState.set(id, { border: "blue" });
+    try {
+      await this.invite(id);
+    } catch {}
+    this.applyFriendStyles();
+  }
+
+  private applyFriendStyles() {
+    this.friendElements.forEach((el) => {
+      const id = Number(el.id!.replace("friend-", ""));
+      const st = InviteMenu.friendState.get(id);
+
+      const bg = "bg-zinc-700/50";
+      let border: string;
+      if (!st) border = "border border-transparent";
+      else {
+        border =
+          st.border === "blue" ? "border border-blue-500"
+          : st.border === "red" ? "border border-red-700"
+          : st.border === "green" ? "border border-emerald-700"
+          : "border border-transparent";
+      }
+      el.class(`
+            flex items-center w-full p-2 rounded-lg cursor-pointer transition-colors
+            shrink-0 h-16 ${bg} ${border} hover:bg-zinc-600
+        `);
+      el.update_classes();
+    });
+    //could need to redraw
+  }
+
+  clear_friendState() {
+    InviteMenu.friendState.clear();
+  }
+
+  set_friendstate(id: number, state: "none" | "blue" | "red" | "green") {
+    InviteMenu.friendState.set(id, { border: state });
   }
 
   updatefriendlist() {
-    const friends: UserInfo[] = this.mockFriends;
+    const friends = this.mockFriends;
 
     const onlineFriends = friends.filter(
       (friend) =>
@@ -151,137 +320,109 @@ export class InviteMenu extends Div {
         || Date.now() - new Date(friend.lastSeen).getTime() <= 5 * 60 * 1000,
     );
 
-    const newfriendElements: AElement[] = onlineFriends.map((friend) =>
+    const newfriendElements = onlineFriends.map((friend) =>
       new Div(
-        new Image(`/api/v1/user/avatars/${friend.username}.webp`)
-          .class("rounded-full")
-          .withStyle("height: 70%; aspect-ratio: 1/1;"),
-        new Paragraph(friend.username)
-          .class("text-white text-lg")
-          .withStyle(
-            "flex-grow: 1; margin-left: 10px; overflow-hidden; text-ellipsis;",
-          ),
+        new Image(`/api/v1/user/avatars/${friend.username}.webp`).class(
+          "rounded-full w-10 h-10 object-cover border border-white/20",
+        ),
+        new Paragraph(friend.username).class(
+          "text-white text-lg font-medium truncate ml-3 flex-grow",
+        ),
       )
         .class(
-          "flex items-center justify-start p-2 hover:bg-gray-700 rounded-lg mx-auto",
+          "flex items-center w-full p-2 rounded-lg cursor-pointer transition-colors shrink-0 h-16 bg-zinc-700/50 hover:bg-zinc-600",
         )
-        .withStyle("height: 10%; min-height: 40px; width: 100%;")
-        .withOnclick(() => console.log(`Clicked on friend ${friend.username}`)) //placeholder for invite action
+        .withOnclick(() => this.selectFriend(friend.id))
         .withId(`friend-${friend.id}`),
     );
 
     this.friendContainer.removeContent(...this.friendElements);
     this.friendContainer.addContent(newfriendElements);
     this.friendElements = newfriendElements;
+
+    this.applyFriendStyles(); // ← réapplique les couleurs persistantes
+
     this.redrawInner();
   }
 }
 
-export class CustomGamePage extends Page {
-  private playerSlots: PlayerSlot[] = Array(4).fill({}); // 4 places
-  private currentUserId = APP.userInfo?.id;
-  private isHost = false;
-  private invitedFriends: { id: number; name: string; avatar: string }[] = [];
-  private PlayerCards = new Map<string, PlayerCard>();
-  private mainContents: Div = new Div().withId(
-    "custompage-main-container",
-  ) as Div;
+export class GameEndMenu extends GameOverlay {
+  private finalScoresDiv = new Div()
+    .withId("final-scores")
+    .class("mb-8") as Div;
 
-  private Waiting_menu: WaitingMenu = new WaitingMenu();
-  private Invite_menu: InviteMenu = new InviteMenu();
+  private resultParagraph: Paragraph = new Paragraph("UNKNOWN").withId(
+    "ResultParagraph",
+  ) as Paragraph;
+  private resultDiv: Div = new Div().class("mb-6 text-center") as Div;
 
-  constructor(router: Router, isHost = false) {
-    super(router, false);
-    this.isHost = isHost;
-    if (isHost)
-      this.playerSlots[0] = {
-        id: this.currentUserId,
-        name: APP.userInfo?.username,
-        avatar: "placeholder_avatar.png",
-        isHost: true,
-      };
-    this.PlayerCards.set(
-      "player-0",
-      new PlayerCard(
-        APP.userInfo as UserInfo | undefined,
-        this.onClick.bind(this),
-      )
-        .withId("player-0")
-        .withStyle("top: 10px; left: 10px; width:45%; height:45%;")
-        .class("absolute") as PlayerCard,
-    );
-    this.PlayerCards.set(
-      "player-1",
-      new PlayerCard(undefined, this.onClick.bind(this))
-        .withId("player-1")
-        .withStyle("top: 10px; right: 10px; width:45%; height:45%;")
-        .class("absolute") as PlayerCard,
-    );
-    this.PlayerCards.set(
-      "player-2",
-      new PlayerCard(undefined, this.onClick.bind(this))
-        .withId("player-2")
-        .withStyle("bottom: 10px; left: 10px; width:45%; height:45%;")
-        .class("absolute") as PlayerCard,
-    );
-    this.PlayerCards.set(
-      "player-3",
-      new PlayerCard(undefined, this.onClick.bind(this))
-        .withId("player-3")
-        .withStyle("bottom: 10px; right: 10px; width:45%; height:45%;")
-        .class("absolute") as PlayerCard,
-    );
-    this.Waiting_menu.updatePlayerContainer(
-      Array.from(this.PlayerCards.values()),
-    );
-    this.mainContents.addContent(this.Waiting_menu);
-    this.resetContent();
+  private gameOverParagrpah = new Paragraph("Game Over!").class(
+    "text-4xl font-bold text-white mb-8 text-center",
+  ) as Paragraph;
+
+  private exitButtonDiv = new Div().class("flex gap-4 justify-center");
+  private exitButton = new Button(new Paragraph("Exit").class("py-3 px-8"))
+    .class(DEFAULT_BUTTON)
+    .withId("exit-btn") as Button;
+
+  private main_content = new Div().withId("gameover-maindiv") as Div;
+
+  constructor(private onClick: () => any) {
+    super();
+
+    this.exitButton.withOnclick(this.onClick.bind(this));
+    this.main_content.addContent([
+      this.gameOverParagrpah,
+      this.finalScoresDiv,
+      this.exitButtonDiv,
+    ]);
+    this.resultDiv.addContent(this.resultParagraph);
+
+    this.contents = [this.main_content];
   }
 
-  resetContent() {
-    console.log("resetContent called");
-    this.mainContents.removeContent(this.Invite_menu);
-    this.mainContents.addContent(this.Waiting_menu);
-    //this.Waiting_menu.updatePlayerContainer(Array.from(this.PlayerCards.values()));
-    this.PlayerCards.forEach((card) => {
-      //disgusting but works
-      card.forceMouseLeave();
-    });
-    this.render();
-  }
+  displayFinalScores(
+    myPid: number,
+    users: UserInfo[],
+    finalScores: { pid: number; score: number }[],
+  ): void {
+    const elements: AElement[] = [];
 
-  render() {
-    const el = this.mainContents.byId();
-    if (!el) {
-      console.log("should not happen");
-      return;
+    const rankedScores = finalScores
+      .map((data, pid) => ({ pid: pid, score: data.score }))
+      .sort((a, b) => b.score - a.score);
+
+    const winner = rankedScores[0];
+    const second = rankedScores[1];
+    const isDraw = winner.score === second.score;
+
+    if (isDraw) {
+      {
+        this.resultParagraph.withStyle(`color : ${DRAW_COLOR};`);
+        this.resultParagraph.set_TextContent("Draw!");
+      }
+    } else if (winner.pid === myPid) {
+      this.resultParagraph.withStyle(`color : ${VICTORY_COLOR};`);
+      this.resultParagraph.set_TextContent("VICTORY!");
+    } else {
+      this.resultParagraph.withStyle(`color : ${DEFEAT_COLOR};`);
+      this.resultParagraph.set_TextContent("DEFEAT....");
     }
-    this.mainContents.redrawInner();
-  }
-
-  onClick() {
-    this.mainContents.removeContent(this.Waiting_menu);
-    this.mainContents.addContent(this.Invite_menu);
-    this.render();
-  }
-
-  content(): AElement[] {
-    return [this.mainContents];
-  }
-
-  getPlayerCardById(id: string): PlayerCard | undefined {
-    return this.PlayerCards.get(id);
-  }
-
-  getAllPlayerCards(): PlayerCard[] {
-    return Array.from(this.PlayerCards.values());
+    this.finalScoresDiv.redrawInner();
   }
 }
 
+/*==========================================================================
+
+
+							..PlayerCard
+
+
+============================================================================*/
+
 export class PlayerCard extends Div {
   private BACKGROUND_STYLE = `
-		w-full h-full 
-		bg-gray-800/50
+		w-full h-full
 	    outline outline-2 outline-gray-400/50
 	`;
 
@@ -322,9 +463,10 @@ export class PlayerCard extends Div {
   constructor(
     private playerInfo?: UserInfo,
     private onClick?: () => void,
+    private bg_color: string = "bg-gray-800/50",
   ) {
     super();
-
+    this.mainContents.class(bg_color);
     this.avatarImage = new Image(
       this.playerInfo?.avatarUrl ?? "/api/v1/user/avatars/default.webp",
     ).class("absolute z-0") as Image;
@@ -341,7 +483,8 @@ export class PlayerCard extends Div {
       "max-width: 80%;",
     ) as Div;
 
-    this.withId("player-card" + this._id);
+    this.withId("player-card" + this._id).class("min-w-[120px] min-h-[120px]");
+
     this.mainContents.addContent([this.avatarDiv, this.waitingDiv]);
 
     this.contents = [this.mainContents];
@@ -356,6 +499,7 @@ export class PlayerCard extends Div {
   setPlayer() {
     this.isfulled = true;
     this.killWaitingDots();
+    this.bindHoverEffect();
     this.unbindHoverEffect();
     this.redrawInner();
   }
@@ -386,26 +530,25 @@ export class PlayerCard extends Div {
   }
 
   bindHoverEffect() {
-    if (this.isfulled) return;
     setTimeout(() => {
       const el = this.byId();
       if (!el) return;
+      if (!this.isfulled) {
+        this.withOnEnter(() => {
+          console.log("PlayerCard OnMouseEnter"); //debug
+          this.mainContents.class("blur-xs");
+          this.mainContents.update_classes();
+          this.addContentWithAppend(this.overlayPlus);
+        });
 
-      this.withOnEnter(() => {
-        console.log("PlayerCard OnMouseEnter"); //debug
-        this.mainContents.class("blur-xs");
-        this.mainContents.update_classes();
-        this.addContentWithAppend(this.overlayPlus);
-      });
-
-      this.withOnLeave(() => {
-        console.log("PlayerCard OnMouseLeave"); //debug
-        this.mainContents.removeClass("blur-xs");
-        this.mainContents.update_classes();
-        this.UnAppendContent(this.overlayPlus);
-      });
-
-      this.withOnclick(this.onClick ?? (() => {}));
+        this.withOnLeave(() => {
+          console.log("PlayerCard OnMouseLeave"); //debug
+          this.mainContents.removeClass("blur-xs");
+          this.mainContents.update_classes();
+          this.UnAppendContent(this.overlayPlus);
+        });
+      }
+      this.withOnclick(this.onClick?.bind(this) ?? (() => {}));
       this.bindEvents();
     });
   }
@@ -425,3 +568,455 @@ export class PlayerCard extends Div {
     }
   }
 }
+
+//TODO
+/*
+	on join after invite then not host
+	on create then host
+
+
+*/
+export class CustomGamePage extends Page {
+  private playerSlots: PlayerSlot[] = Array(4).fill({}); // 4 places
+  private finalScores: { pid: number; score: number }[] = [];
+  private currentUserId = APP.userInfo?.id;
+  private isHost = true;
+  private gameKey: gameKeys | null = null;
+  private gameInstance: PongApp | null = null;
+  private invitedFriends: { id: number; name: string; avatar: string }[] = [];
+  private IngamePlayers: { pid: number; User: UserInfo }[] = [];
+
+  private myAvatarUrl?: string;
+  private queueState: QueueState = "waiting";
+  private free_slot: string[] = [];
+  private overlayDiv: Div = new Div();
+  private finalScoresDiv: Div = new Div();
+
+  private nb_p: number;
+
+  private gameScreen = new Div(
+    new Div().withId("canvas-container").class("absolute inset-0 bg-gray-900"),
+
+    new Div()
+      .withId("game-hud")
+      .class("absolute top-0 left-0 right-0 bg-zinc-800 p-4"),
+  )
+    .withId("game-screen")
+    .class("relative w-full h-screen overflow-hidden") as Div;
+
+  private mainContents: Div = new Div().withId(
+    "custompage-main-container",
+  ) as Div;
+
+  private Waiting_menu: WaitingMenu = new WaitingMenu(
+    this.openInvitePanel.bind(this),
+    this.onReadyClick.bind(this),
+  ).withId("Customgame-waitingMenu") as WaitingMenu;
+  private Invite_menu: InviteMenu = new InviteMenu(
+    this.closeInvitePanel.bind(this),
+  ).withId("Customgame-waitingMenu") as InviteMenu;
+  private EndGame_menu!: GameEndMenu;
+
+  constructor(
+    router: Router,
+    private Options?: PageArgs,
+  ) {
+    super(router, false);
+    if (!Options) {
+      alert("nop, this custom room does not exist, bye.");
+      router.navigate("/play");
+    }
+    //alert(`Option = ${Options?.gameId}, ${Options?.nb_players}, ${Options?.key},${Options?.expires}`);
+    this.nb_p = Options?.nb_players as number;
+
+    this.EndGame_menu = new GameEndMenu(this.OnExitClick.bind(this));
+    this.mainContents.addContent(this.Waiting_menu);
+    this.mainContents.redrawInner();
+    this.gameKey = Options as gameKeys;
+    this.queueState = "waiting";
+
+    APP.headerRoot.style.display = "none";
+  }
+
+  private initialiseGame(): void {
+    const container = document.getElementById("canvas-container");
+    if (!container) {
+      return;
+    }
+
+    if (!this.gameKey) {
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.id = "gameCanvas";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.position = "absolute";
+    canvas.style.top = "0";
+    canvas.style.left = "0";
+    canvas.tabIndex = 1;
+    container.innerHTML = "";
+    container.appendChild(canvas);
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/api/v1/ws`;
+
+    this.gameInstance = new PongApp(wsUrl, this.gameKey.key, APP.userInfo?.id);
+    this.setupGameListeners();
+    canvas.focus();
+
+    (this as any).pidCheckInterval = setInterval(() => {
+      if (
+        this.gameInstance
+        && this.gameInstance.myPid !== undefined
+        && this.gameInstance.myPid !== -1
+      ) {
+        clearInterval((this as any).pidCheckInterval);
+        delete (this as any).pidCheckInterval;
+
+        this.createGameHUD();
+      }
+    }, 50);
+  }
+
+  private restoreHeader(): void {
+    APP.headerRoot.style.display = "";
+  }
+
+  bindEvents(): void {
+    this.initialiseGame();
+    this.renderQueueState();
+    InviteMenu.gameId = this.Options?.gameId!;
+    if (this.queueState !== "finished") {
+    }
+  }
+
+  transitionAway(): void {
+    if (this.queueState !== "finished" && this.gameKey) {
+    }
+    this.Waiting_menu.clear_ready();
+    this.resetGame();
+    this.restoreHeader();
+  }
+
+  content(): AElement[] {
+    return [this.gameScreen, this.mainContents];
+  }
+
+  private async createGameHUD(): Promise<void> {
+    const hudContainer = document.getElementById("game-hud");
+    const nbPlayers = this.Options?.nb_players || 2;
+
+    if (!hudContainer || !this.gameInstance) return;
+
+    const myPid = this.gameInstance.myPid;
+    if (myPid === undefined || myPid === -1) return;
+
+    const playerPromises = Array.from({ length: nbPlayers }, async (_, pid) => {
+      const isMe = pid === myPid;
+      const scoreId = `score-${pid}`;
+      const color = PLAYER_COLOURS[pid % PLAYER_COLOURS.length];
+
+      let position: "left" | "right";
+
+      if (nbPlayers === 2) {
+        position = isMe ? "left" : "right";
+      } else {
+        position = pid % 2 === 0 ? "left" : "right";
+      }
+
+      if (isMe) {
+        const myAvatar =
+          APP.userInfo?.username ?
+            `/api/v1/user/avatars/${APP.userInfo.username}.webp`
+          : undefined;
+        this.myAvatarUrl = myAvatar;
+
+        return new PlayerAvatar("You", scoreId, color, position, myAvatar);
+      }
+
+      let playerName = "Waiting...";
+      let playerAvatar: string | undefined =
+        `/api/v1/user/avatars/default.webp`;
+
+      const targetUserId = this.gameInstance?.playerUserIds.get(pid);
+
+      if (targetUserId) {
+        const userInfo = await this.getUserInfo(targetUserId);
+        if (userInfo) {
+          playerName = userInfo.username;
+          playerAvatar = `/api/v1/user/avatars/${userInfo.username}.webp`;
+        }
+      } else {
+        playerName = `Player ${pid + 1}`;
+      }
+      return new PlayerAvatar(
+        playerName,
+        scoreId,
+        color,
+        position,
+        playerAvatar,
+      );
+    });
+
+    const players = await Promise.all(playerPromises);
+
+    hudContainer.innerHTML = new GameHUD(players)
+      .withId("game-hud-content")
+      .render();
+  }
+
+  async getUserInfo(user_id: number): Promise<UserInfo | undefined> {
+    try {
+      const resp = await fetch(`/api/v1/users/${user_id}`, { method: "GET" });
+      if (resp.ok) return (await resp.json()) as UserInfo;
+    } catch {
+      console.error(`Failed to fetch info for User${user_id}`);
+      return;
+    }
+  }
+
+  async getIngamePlayers(): Promise<{ pid: number; User: UserInfo }[]> {
+    if (this.IngamePlayers.length >= this.nb_p) {
+      return this.IngamePlayers;
+    }
+    const playersMap = this.gameInstance?.playerUserIds;
+    if (!playersMap) return [];
+    const entries = Array.from(playersMap.entries());
+
+    const fetches = entries.map(async ([pid, userId]) => {
+      if (userId == null) return null;
+      const user = await this.getUserInfo(userId);
+      return user ? { pid, User: user } : null;
+    });
+
+    const resolved = await Promise.all(fetches);
+
+    const valid = resolved.filter(
+      (e): e is { pid: number; User: UserInfo } => e !== null,
+    );
+    this.IngamePlayers = valid.slice(0, this.nb_p);
+
+    return this.IngamePlayers;
+  }
+
+  private async renderQueueState() {
+    this.mainContents.removeContent(this.Waiting_menu);
+    this.mainContents.removeContent(this.Invite_menu);
+    this.mainContents.removeContent(this.EndGame_menu);
+    switch (this.queueState) {
+      case "inviting":
+        //this.mainContents.addContent(this.Waiting_menu);
+        this.mainContents.addContent(this.Invite_menu);
+        break;
+      case "waiting":
+        this.Waiting_menu.make_playerCards(
+          APP.userInfo!.id,
+          await this.getIngamePlayers(),
+          this.nb_p,
+        );
+        //this.mainContents.addContent(this.Invite_menu);
+        this.mainContents.addContent(this.Waiting_menu);
+        break;
+      case "ready":
+        break;
+      case "playing":
+        //this.mainContents.removeContent();
+        this.createGameHUD();
+        break;
+      case "finished":
+        this.mainContents.addContent(this.EndGame_menu);
+        break;
+    }
+    this.mainContents.bindEvents();
+    this.mainContents.redrawInner();
+  }
+
+  private setupGameListeners(): void {
+    if (!this.gameInstance?.sock) return;
+
+    const originalHandler = this.gameInstance.sock.onmessage;
+    this.gameInstance.sock.onmessage = (ev: MessageEvent) => {
+      originalHandler?.call(this.gameInstance!.sock, ev);
+
+      try {
+        const msg = JSON.parse(ev.data);
+        switch (msg.type) {
+          case "player_ready":
+            this.Waiting_menu.add_ready(msg.pid);
+            break;
+          case "game_join":
+            break;
+          case "player_list": {
+            if (this.queueState != "waiting") break;
+            const connectedPlayers = msg.players?.filter(
+              (p: any) => p.userId !== null,
+            );
+            this.renderQueueState();
+            if (connectedPlayers?.length === this.Options?.nb_players) {
+              this.queueState = "ready";
+            }
+            break;
+          }
+          case "game_start": {
+            this.queueState = "playing";
+            this.createGameHUD();
+            this.startUIUpdates();
+          }
+          case "game_end":
+            this.onGameEnd(msg);
+            break;
+          case "game_abandoned":
+            alert("Game was abandoned: " + msg.reason);
+            this.resetGame();
+            this.OnExitClick();
+            break;
+        }
+        this.renderQueueState();
+        if (msg.type === "player_list" && this.queueState === "waiting") {
+        }
+        if (msg.type === "game_start") {
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+    };
+  }
+
+  private initializeGameUI(): void {
+    const hudContainer = document.getElementById("game-hud");
+    if (hudContainer) {
+      hudContainer.innerHTML = "";
+    }
+  }
+
+  private resetGame(): void {
+    if ((this as any).updateIntervalId) {
+      clearInterval((this as any).updateIntervalId);
+      delete (this as any).updateIntervalId;
+    }
+
+    if ((this as any).pidCheckInterval) {
+      clearInterval((this as any).pidCheckInterval);
+      delete (this as any).pidCheckInterval;
+    }
+
+    if (this.gameInstance) {
+      this.gameInstance.dispose();
+      this.gameInstance = null;
+    }
+
+    const container = document.getElementById("canvas-container");
+    if (container) container.innerHTML = "";
+
+    const hudContainer = document.getElementById("game-hud");
+    if (hudContainer) hudContainer.innerHTML = "";
+
+    this.gameKey = null;
+    this.finalScores = [];
+    this.queueState = "waiting";
+  }
+
+  private onGameEnd(msg: any): void {
+    if (!this.finalScores || this.finalScores.length < 2 || !this.gameInstance)
+      return;
+    if ((this as any).updateIntervalId) {
+      clearInterval((this as any).updateIntervalId);
+      delete (this as any).updateIntervalId;
+    }
+    const players =
+      msg.players?.length > 0 ?
+        msg.players
+      : this.gameInstance?.gameState?.players;
+    if (players) {
+      this.finalScores = players.map((p: any, idx: number) => ({
+        player: idx + 1,
+        score: p.score,
+      }));
+    }
+    this.queueState = "finished";
+    this.EndGame_menu.displayFinalScores(
+      this.gameInstance.myPid,
+      this.IngamePlayers.map((e) => e.User),
+      this.finalScores,
+    );
+  }
+
+  //during game i guess
+  private startUIUpdates(): void {
+    const intervalId = setInterval(() => {
+      if (!this.gameInstance?.gameState) return;
+
+      const { gameState, params } = this.gameInstance;
+
+      for (let i = 0; i < 2; i++) {
+        const scoreEl = document.getElementById(`score-${i}`);
+        if (scoreEl && gameState.players?.[i]) {
+          scoreEl.textContent = String(gameState.players[i].score);
+        }
+      }
+      const timerEl = document.getElementById("game-timer");
+      if (!timerEl) return;
+
+      if (gameState.pauseCd > 0) {
+        const countdown = Math.ceil((gameState.pauseCd * params.tickMs) / 1000);
+        timerEl.textContent = String(countdown);
+        timerEl.classList.remove(...TIMER_NORMAL);
+        timerEl.classList.add(...TIMER_COUNTDOWN);
+      } else {
+        const seconds = Math.floor(gameState.time / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        timerEl.textContent = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        timerEl.classList.remove(...TIMER_COUNTDOWN);
+        timerEl.classList.add(...TIMER_NORMAL);
+      }
+    }, 100);
+    (this as any).updateIntervalId = intervalId;
+  }
+
+  /*=================================================================
+		    
+							  Buttons Actions
+		    
+	  ===================================================================*/
+  openInvitePanel() {
+    console.log("");
+    this.queueState = "inviting";
+    this.renderQueueState();
+  }
+
+  closeInvitePanel() {
+    console.log("on exit panel");
+    this.queueState = "waiting";
+    this.renderQueueState();
+  }
+
+  onReadyClick() {
+    console.log("on ready");
+    if (!this.gameInstance) return;
+
+    if (this.gameInstance.player1?.ws.readyState === WebSocket.OPEN) {
+      this.gameInstance.player1.ws.send(JSON.stringify({ type: "ready" }));
+    }
+    this.renderQueueState();
+  }
+
+  //idk if we can unready ??
+  onUnReadyClick() {
+    if (!this.gameInstance) return;
+
+    if (this.gameInstance.player1?.ws.readyState === WebSocket.OPEN) {
+      this.gameInstance.player1.ws.send(JSON.stringify({ type: "ready" }));
+    }
+
+    this.renderQueueState();
+  }
+
+  OnExitClick() {
+    this.router.navigate("play");
+  }
+}
+
+type QueueState = "inviting" | "waiting" | "ready" | "playing" | "finished";
