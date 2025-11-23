@@ -60,8 +60,8 @@ export class CustomGameManager {
 			throw new BadRequestError('Cannot invite the same player multiple times');
 		}
 
-		if (playersToInvite.length < capacity - 1)
-			throw new BadRequestError('Number of players is less than the room size');
+//		if (playersToInvite.length < capacity - 1)
+//			throw new BadRequestError('Number of players is less than the room size');
 
 		const webhookUrl = `${process.env.SERVICE_URL}/webhooks/games/GAME_ID/result`;
 
