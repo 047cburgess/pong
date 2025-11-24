@@ -14,7 +14,7 @@ export const gamePropertiesSchema = z.object({
   coop: z.boolean().default(false),
   isTournament: z.boolean().default(false), // ADDED
   ballSpeed: z.number().gte(16).lte(160).default(130),
-  paddleSize: z.number().gte(4000).lte(60000).default(17000),
+  paddleSize: z.number().gte(4000).lte(60000).default(24000),
   paddleSpeed: z.number().gte(40).lte(500).default(320),
   paddleInertia: z.number().gte(0).lte(64).default(16),
   paddleFriction: z.number().gte(-5).lte(5).default(1.4),
@@ -235,10 +235,15 @@ export class Game {
     if (this.state.pauseCd) {
       this.state.pauseCd--;
       if (this.state.pauseCd === 0) {
-        this.state.ball.vel = new Vec2(
-          Math.random() * 2 - 1,
-          Math.random() * 2 - 1
-        ).normalize();
+        while (true) {
+          this.state.ball.vel = new Vec2(
+            Math.random() * 2 - 1,
+            Math.random() * 2 - 1
+          ).normalize();
+          if (Math.abs(this.state.ball.vel.x) * 1.33 > Math.abs(this.state.ball.vel.y)) {
+            break;
+          }
+        }
       }
     } else {
       // Only increment time after countdown finishes
