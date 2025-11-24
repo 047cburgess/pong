@@ -16,6 +16,7 @@ export interface TournamentInviteResponseEvent {
   from: UserId;
 }
 
+
 type SSEEvent =
   | GameInviteEvent
   | InviteResponseEvent

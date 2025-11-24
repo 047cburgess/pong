@@ -5,6 +5,7 @@ services:
       - transcendence
     volumes:
       - ./nginx_conf.d:/etc/nginx/conf.d
+      - ../frontend/frontend/dist:/usr/share/nginx/html:ro
     ports:
       - 9999:80
     depends_on:
