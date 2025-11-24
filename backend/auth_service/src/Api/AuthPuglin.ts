@@ -65,7 +65,7 @@ export async function AuthPlugin(server: FastifyInstance) {
 	server.setErrorHandler(authErrorHandler);
 
 	server.post("/user/register", async (request, reply) => {
-    const token = await AuthManager.getInstance().register((request.body as RegisterBody));
+		const token = await AuthManager.getInstance().register((request.body as RegisterBody));
 		reply.setCookie("jwt", token, {
 			path: "/",
 			httpOnly: true,
@@ -99,11 +99,11 @@ export async function AuthPlugin(server: FastifyInstance) {
 		const JWTtoken = AuthManager.getInstance().login2FA(parseInt(token2FA), code);
 
 		reply.clearCookie("token2FA", {
-            path: "/user/login", 
-            httpOnly: true,
-            sameSite: "strict",
-            secure: "auto",
-        });
+			path: "/user/login",
+			httpOnly: true,
+			sameSite: "strict",
+			secure: "auto",
+		});
 
 		reply.setCookie("jwt", JWTtoken, {
 			path: "/",
@@ -166,13 +166,20 @@ export async function AuthPlugin(server: FastifyInstance) {
 		return reply.status(200).send({ status: "success" });
 	});
 
-	server.put("/user/two-factor", {preHandler : JwtCookieChecker} ,async (request, reply) => {
+	server.get("/user/two-factor", { preHandler: JwtCookieChecker }, async (request, reply) => {
+		const user_id = request.headers['x-user-id'] as string;
+		const status = AuthManager.getInstance().getTwoFA(Number(user_id));
+		return reply.status(200).send({state : status});
+	});
+
+
+	server.put("/user/two-factor", { preHandler: JwtCookieChecker }, async (request, reply) => {
 		const user_id = request.headers['x-user-id'] as string;
 		AuthManager.getInstance().enableTwoFA(Number(user_id));
 		return reply.status(204).send();
 	});
 
-	server.delete("/user/two-factor", {preHandler : JwtCookieChecker}, async (request, reply) => {
+	server.delete("/user/two-factor", { preHandler: JwtCookieChecker }, async (request, reply) => {
 		const user_id = request.headers['x-user-id'] as string;
 		AuthManager.getInstance().disableTwoFA(Number(user_id));
 		return reply.status(204).send();

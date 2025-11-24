@@ -85,6 +85,14 @@ export class AuthManager {
 		return this.jwt_manager.generateJWT(user_id);
 	}
 
+
+	public getTwoFA(userId: number): number {
+		const credentials = this.db.getUserById(userId);
+		if (!credentials)
+			throw ApiError.NotFound("USER_NOT_FOUND", []);
+		return credentials.TwoFA;
+	}
+
 	public enableTwoFA(userId: number): void {
 		const credentials = this.db.getUserById(userId);
 		if (!credentials)
