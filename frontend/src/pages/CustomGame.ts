@@ -942,12 +942,13 @@ export class CustomGamePage extends Page {
         score: p.score,
       }));
     }
-    this.queueState = "finished";
-    this.EndGame_menu.displayFinalScores(
+	this.EndGame_menu.displayFinalScores(
       this.gameInstance.myPid,
       this.IngamePlayers.map((e) => e.User),
       this.finalScores,
     );
+    this.queueState = "finished";
+
   }
 
   //during game i guess

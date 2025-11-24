@@ -265,7 +265,6 @@ class App {
   }
 
   async onGameInvite(invite: GameInvite) {
-    alert(JSON.stringify(invite));
     const popup: GameInvitePopup = new GameInvitePopup(
       this.router,
       invite.gameId,
