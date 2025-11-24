@@ -37,13 +37,6 @@ npm-build:
 	cd backend/game_service && npm run build
 	@echo "$(BLUE)Building matchmaking service...$(NC)"
 	cd backend/matchmaking_service && npm run build
-	@echo "$(BLUE)Building babylon webserver...$(NC)"
-	cd game-front-babylon && npm run build
-	@echo "$(GREEN)All services built$(NC)"
-
-babylon-start:
-	@echo "$(YELLOW)Starting babylon webserver...$(NC)"
-	cd game-front-babylon && npm start
 
 build:
 	@if [ ! -f $(ENV_FILE) ]; then \
@@ -80,7 +73,6 @@ fclean: clean
 	@echo "$(RED)Removing node_modules...$(NC)"
 	-rm -rf backend/game_service/node_modules
 	-rm -rf backend/matchmaking_service/node_modules
-	-rm -rf game-front-babylon/node_modules
 	-rm -rf backend/auth_service/node_modules
 	@echo "$(GREEN)Full cleanup complete$(NC)"
 

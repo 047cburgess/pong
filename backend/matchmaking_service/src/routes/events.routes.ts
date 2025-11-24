@@ -5,11 +5,12 @@ export default async function eventsRoutes(fastify: FastifyInstance) {
 
 	fastify.get('/events', async (request, reply) => {
 
-		const query = request.query as { user_id?: string };
+		const query = request.query as { user_id?: Number };
 		fastify.log.debug(`EVENTS: user_id: ${query.user_id}`);
 		const userId = Number(request.headers['x-user-id'] || query.user_id);
 		if (!userId) {
 			throw new UnauthorizedError('Unauthorized');
+			fastify.log.error('SEE connection Unauthorized, missing request headers user id');
 		}
 
 		reply.raw.setHeader('Content-Type', 'text/event-stream');
@@ -25,6 +26,7 @@ export default async function eventsRoutes(fastify: FastifyInstance) {
 			try {
 				reply.raw.write(':ping\n\n');
 			} catch (err) {
+				fastify.log.error('EVENTS: set interval caught error after trying ping so removing connection');
 				fastify.eventManager.removeConnection(userId);
 			}
 		}, 30000);
@@ -35,7 +37,7 @@ export default async function eventsRoutes(fastify: FastifyInstance) {
 		// Clean closes from client
 		request.raw.on('close', () => {
 			fastify.eventManager.removeConnection(userId);
-			fastify.log.info({ userId }, 'SSE connection closed');
+			fastify.log.info({ userId }, 'received close - request raw on close SSE connection closed');
 		});
 	});
 }

@@ -78,7 +78,7 @@ export class EventManager {
    */
   sendEvent(toUserId: UserId, event: SSEEvent): boolean {
 	const message = `data: ${JSON.stringify(event)}\n\n`;
-	this.log.debug(`SENDEVENT Function: Sending SSE to ${toUserId}: ${message}`);
+	this.log.debug(`SENDEVENT Function: Attempting to send SSE to ${toUserId}: ${message}`);
 
     const connection = this.connections.get(toUserId);
 
