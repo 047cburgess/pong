@@ -13,7 +13,7 @@ const envToLogger = {
     transport: {
       target: 'pino-pretty',
       options: {
-    	translateTime: "SYS:HH:MM:ss Z",
+        translateTime: "SYS:HH:MM:ss Z",
         ignore: 'pid,hostname',
         colorize: true
       }
@@ -64,11 +64,11 @@ const fastify = Fastify({
 });
 
 await fastify.register(cors, {
-	origin: (_origin, cb) => {
-		cb(null, true);
-	},
-	credentials: true,
-	methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
+  origin: (_origin, cb) => {
+    cb(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
 });
 //await fastify.register(cors, {
 //	origin: true, 
@@ -127,103 +127,103 @@ fastify.post('/games/local/create', async (req, resp) => {
 // ROUTE
 // FOR CLASSIC GAME (MATCHMAKING 2PL OR 2-4PL CUSTOM)
 // ROUTE FOR CLASSIC GAME (MATCHMAKING 2PL OR 2-4PL CUSTOM)
-  fastify.post('/internal/games/classic/create', async (req, resp) => {
+fastify.post('/internal/games/classic/create', async (req, resp) => {
 
-    fastify.log.debug('Entered /internal/games/classic/create');
+  fastify.log.debug('Entered /internal/games/classic/create');
 
-    let gameParams: GameProperties;
-    try {
-      gameParams = gamePropertiesSchema.parse(req.body);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return resp.status(400).send({
-          errors: error.issues.map(err => ({
-            path: err.path.join('.'),
-            message: err.message
-          })),
-        });
-      }
-      return resp.status(500).send({ error: 'Server error' });
+  let gameParams: GameProperties;
+  try {
+    gameParams = gamePropertiesSchema.parse(req.body);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return resp.status(400).send({
+        errors: error.issues.map(err => ({
+          path: err.path.join('.'),
+          message: err.message
+        })),
+      });
     }
+    return resp.status(500).send({ error: 'Server error' });
+  }
 
-    const gameId = randomUUID();
-    const hookUrl = (req.body as any)?.hook?.replace('GAME_ID', gameId);
-    const game = new Game(gameId, gameParams, hookUrl);
-    const tokenExpiry = Date.now() + TOKEN_TTL_MS;
+  const gameId = randomUUID();
+  const hookUrl = (req.body as any)?.hook?.replace('GAME_ID', gameId);
+  const game = new Game(gameId, gameParams, hookUrl);
+  const tokenExpiry = Date.now() + TOKEN_TTL_MS;
 
-    game.tokenExpiry = tokenExpiry;
-    game.abandonmentTimeout = setTimeout(
-      () => handleAbandonment(game),
-      TOKEN_TTL_MS + ABANDONMENT_GRACE_PERIOD_MS
-    );
+  game.tokenExpiry = tokenExpiry;
+  game.abandonmentTimeout = setTimeout(
+    () => handleAbandonment(game),
+    TOKEN_TTL_MS + ABANDONMENT_GRACE_PERIOD_MS
+  );
 
-    games.set(gameId, game);
+  games.set(gameId, game);
 
-    // BUILD THE RESPONSE GAME KEYS
-    const gameKeys = Array.from({ length: gameParams.nPlayers }).map(() => {
-      const playerId = randomUUID();
-      const key = createToken(playerId, gameId, tokenExpiry);
-      const tokenData = tokenMap.get(key)!;
+  // BUILD THE RESPONSE GAME KEYS
+  const gameKeys = Array.from({ length: gameParams.nPlayers }).map(() => {
+    const playerId = randomUUID();
+    const key = createToken(playerId, gameId, tokenExpiry);
+    const tokenData = tokenMap.get(key)!;
 
-      return {
-        key,
-        gameId,
-        expires: new Date(tokenData.expires).toISOString()
-      };
-    });
-
-    return { gameKeys };
+    return {
+      key,
+      gameId,
+      expires: new Date(tokenData.expires).toISOString()
+    };
   });
+
+  return { gameKeys };
+});
 
 // FOR CREATING TOURNAMENT GAME
-  fastify.post('/internal/games/tournament/create', async (req, resp) => {
+fastify.post('/internal/games/tournament/create', async (req, resp) => {
 
-    fastify.log.debug('Entered /internal/games/tournament/create');
+  fastify.log.debug('Entered /internal/games/tournament/create');
 
-    let gameParams: GameProperties;
-    try {
-      gameParams = gamePropertiesSchema.parse(req.body);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return resp.status(400).send({
-          errors: error.issues.map(err => ({
-            path: err.path.join('.'),
-            message: err.message
-          })),
-        });
-      }
-      return resp.status(500).send({ error: 'Server error' });
+  let gameParams: GameProperties;
+  try {
+    gameParams = gamePropertiesSchema.parse(req.body);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return resp.status(400).send({
+        errors: error.issues.map(err => ({
+          path: err.path.join('.'),
+          message: err.message
+        })),
+      });
     }
+    return resp.status(500).send({ error: 'Server error' });
+  }
 
-    const gameId = randomUUID();
-    const hookUrl = (req.body as any)?.hook?.replace('GAME_ID', gameId);
-    gameParams.isTournament = true; // ADDED
-    fastify.log.debug(`GameParams.isTournament = ${gameParams.isTournament}`);
-    const game = new Game(gameId, gameParams, hookUrl);
-    const tokenExpiry = Date.now() + TOKEN_TTL_MS;
+  const gameId = randomUUID();
+  const hookUrl = (req.body as any)?.hook?.replace('GAME_ID', gameId);
+  gameParams.isTournament = true; // ADDED
+  fastify.log.debug(`GameParams.isTournament = ${gameParams.isTournament}`);
+  const game = new Game(gameId, gameParams, hookUrl);
+  const tokenExpiry = Date.now() + TOKEN_TTL_MS;
 
-    game.tokenExpiry = tokenExpiry;
-    game.abandonmentTimeout = setTimeout(
-      () => handleAbandonment(game),
-      TOKEN_TTL_MS + ABANDONMENT_GRACE_PERIOD_MS
-    );
+  game.tokenExpiry = tokenExpiry;
+  game.abandonmentTimeout = setTimeout(
+    () => handleAbandonment(game),
+    TOKEN_TTL_MS + ABANDONMENT_GRACE_PERIOD_MS
+  );
 
-    games.set(gameId, game);
+  games.set(gameId, game);
 
-    // BUILD THE RESPONSE GAME KEYS
-    const gameKeys = Array.from({ length: gameParams.nPlayers }).map(() => {
-      const playerId = randomUUID();
-      const key = createToken(playerId, gameId, tokenExpiry);
-      const tokenData = tokenMap.get(key)!;
-      return {
-        key,
-        gameId,
-        expires: new Date(tokenData.expires).toISOString()
-      };
-    });
-
-    return { viewingKey: game.viewingKey, gameKeys };
+  // BUILD THE RESPONSE GAME KEYS
+  const gameKeys = Array.from({ length: gameParams.nPlayers }).map(() => {
+    const playerId = randomUUID();
+    const key = createToken(playerId, gameId, tokenExpiry);
+    const tokenData = tokenMap.get(key)!;
+    return {
+      key,
+      gameId,
+      expires: new Date(tokenData.expires).toISOString()
+    };
   });
+
+  return { viewingKey: game.viewingKey, gameKeys };
+});
 
 
 
@@ -331,35 +331,35 @@ fastify.register(async function(fastify) {
       let game: Game | null = null;
 
       // Is a player token or a viewerkey. player token can be expired, viewer key doesn't expire but wont exist if game has finished
-     if (token.startsWith("view_")) {
-      	fastify.log.debug(`Token: ${token} is a VIEWER, UserId - ${userId}`);
-	     isViewer = true;
-	     const foundGame = Array.from(games.values()).find(g => g.viewingKey === token);
-	     game = foundGame !== undefined ? foundGame : null;
-	     if (!game) {
-		     fastify.log.debug(`Game not found`);
-        	try { ws.close(4001, 'unauthorized'); } catch { }
-        	return;
-	     }
-	     playerId = game.viewingKey + randomUUID();
-     } else {
-      const meta = validateToken(token); // checks if its valid or expired
-      game = meta ? (games.get(meta.gameId) ?? null) : null;
-      
-      if (!meta || !game) {
+      if (token.startsWith("view_")) {
+        fastify.log.debug(`Token: ${token} is a VIEWER, UserId - ${userId}`);
+        isViewer = true;
+        const foundGame = Array.from(games.values()).find(g => g.viewingKey === token);
+        game = foundGame !== undefined ? foundGame : null;
+        if (!game) {
+          fastify.log.debug(`Game not found`);
+          try { ws.close(4001, 'unauthorized'); } catch { }
+          return;
+        }
+        playerId = game.viewingKey + randomUUID();
+      } else {
+        const meta = validateToken(token); // checks if its valid or expired
+        game = meta ? (games.get(meta.gameId) ?? null) : null;
 
-        try { ws.close(4001, 'unauthorized'); } catch { }
-        return;
+        if (!meta || !game) {
+
+          try { ws.close(4001, 'unauthorized'); } catch { }
+          return;
+        }
+        playerId = meta.playerId;
+
       }
-      playerId = meta.playerId;
 
-     } 
-
-      const pSock: PlayerSocket = { 
-	      id: playerId,
-	      userId,
-	      ws,
-	      isViewer,
+      const pSock: PlayerSocket = {
+        id: playerId,
+        userId,
+        ws,
+        isViewer,
       };
 
       game.addPlayer(pSock);
@@ -367,18 +367,18 @@ fastify.register(async function(fastify) {
       // revokeToken(token); // don't revoke so players can reconnect
 
       ws.on('message', (raw: any) => {
-	if (isViewer) return;
+        if (isViewer) return;
         let msg: any;
         try { msg = JSON.parse(String(raw)); } catch { return; }
         if (!msg) return;
 
-	// ADD - for treating the ready check. playerRead then starts the game if they all re ready
-	if (msg.type === 'ready') {
-        	game.playerReady(playerId);
-        	return;
-	}
+        // ADD - for treating the ready check. playerRead then starts the game if they all re ready
+        if (msg.type === 'ready') {
+          game.playerReady(playerId);
+          return;
+        }
 
-	if (typeof msg.seq !== 'number') return;
+        if (typeof msg.seq !== 'number') return;
         if (pSock.lastSeq && msg.seq <= (pSock.lastSeq)) return;
         pSock.lastSeq = msg.seq;
         msg.t ||= Date.now();
@@ -388,7 +388,7 @@ fastify.register(async function(fastify) {
       ws.on('close', () => {
         game.removePlayer(playerId);
       });
-  });
+    });
 });
 
 fastify.listen({ host: "0.0.0.0", port: config.PORT })
@@ -427,7 +427,7 @@ const shutdown = async () => {
     }
     // clean shut of sockets
     for (const player of game.players.values()) {
-	    player.ws.close(1001, 'Game Server shutting down');
+      player.ws.close(1001, 'Game Server shutting down');
     }
   }
 
@@ -443,4 +443,3 @@ const shutdown = async () => {
 
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
-

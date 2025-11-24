@@ -156,20 +156,20 @@ export class Game {
 
     // HANDLE VIEWER SPECIFIC
     if (p.isViewer) {
-	    this.sendTo(p, JSON.stringify({
-		    type: "game_join",
-		    params: this.params,
-		    pid: -1,
-		    isViewer: true
-	    }));
+      this.sendTo(p, JSON.stringify({
+        type: "game_join",
+        params: this.params,
+        pid: -1,
+        isViewer: true
+      }));
 
-	    if (this.loop) {
-		    // Game already started
-		    this.sendTo(p, JSON.stringify({ type: "game_start" }));
-	    }
-	    // Send current player list (viewer sees who's playing)
-	    this.broadcastPlayerList();
-	    return;
+      if (this.loop) {
+        // Game already started
+        this.sendTo(p, JSON.stringify({ type: "game_start" }));
+      }
+      // Send current player list (viewer sees who's playing)
+      this.broadcastPlayerList();
+      return;
     }
 
     // Allocate the player a side if they arent already allocated - for reconnections
@@ -188,33 +188,33 @@ export class Game {
 
   // CHECKING IF ALL PLAYERS ARE READY -- TBD HOW TO MESSAGE RECONNECTIONS ETC
   playerReady(pid: PlayerId) {
-	// add to ready players
-	this.readyPlayers.add(pid);
-	  // broadcast the player is ready and num players ready
-	this.broadcast(JSON.stringify({
- 	   type: "player_ready",
-	   pid: this.playerSides.get(pid) as number,
- 	   totalReady: this.readyPlayers.size,
- 	   totalPlayers: this.params.nPlayers,
- 	 }));
+    // add to ready players
+    this.readyPlayers.add(pid);
+    // broadcast the player is ready and num players ready
+    this.broadcast(JSON.stringify({
+      type: "player_ready",
+      pid: this.playerSides.get(pid) as number,
+      totalReady: this.readyPlayers.size,
+      totalPlayers: this.params.nPlayers,
+    }));
 
- 	 // If all ready, start game
- 	 if (this.readyPlayers.size === this.params.nPlayers) {
- 	   this.startGame();
- 	 }
+    // If all ready, start game
+    if (this.readyPlayers.size === this.params.nPlayers) {
+      this.startGame();
+    }
   }
 
   // sync the start of game once ready check is done, 3 second count down
   startGame() {
-	if (this.loop) return;
-	this.broadcast(JSON.stringify({
- 	   type: "game_start",
- 	   totalPlayers: this.params.nPlayers,
- 	 }));
-	   this.state.pauseCd = Math.round(1000 / this.tickMs) * 3; // 3 sec countdown
-	   this.gameStart = Date.now();
-	   this.lastTime = Date.now();
-	   this.loop = setInterval(this.gameTick.bind(this), this.tickMs);
+    if (this.loop) return;
+    this.broadcast(JSON.stringify({
+      type: "game_start",
+      totalPlayers: this.params.nPlayers,
+    }));
+    this.state.pauseCd = Math.round(1000 / this.tickMs) * 3; // 3 sec countdown
+    this.gameStart = Date.now();
+    this.lastTime = Date.now();
+    this.loop = setInterval(this.gameTick.bind(this), this.tickMs);
   }
 
   removePlayer(pid: PlayerId) {
@@ -245,11 +245,11 @@ export class Game {
       this.state.time += lt - this.lastTime;
       this.state.tick++;
       Array.from(this.players.keys()).forEach((pid) => {
-	const player = this.players.get(pid);
-	if (!player?.isViewer) {
-        	this.applyInput(pid, this.inputBuffers.get(pid));
-        	this.inputBuffers.set(pid, []);
-	}
+        const player = this.players.get(pid);
+        if (!player?.isViewer) {
+          this.applyInput(pid, this.inputBuffers.get(pid));
+          this.inputBuffers.set(pid, []);
+        }
       });
       this.updateBall();
     }
@@ -257,13 +257,13 @@ export class Game {
 
     const update = { type: 'state', state: this.state, pid: -1 };
     Array.from(this.players.values()).forEach((p) => {
-	    if (p.isViewer) {
-		    this.sendTo(p, JSON.stringify(update));
-	    } else {
-      		assert(typeof this.playerSides.get(p.id) === 'number')
-      		update.pid = this.playerSides.get(p.id) as number;
-      		this.sendTo(p, JSON.stringify(update));
-	    }
+      if (p.isViewer) {
+        this.sendTo(p, JSON.stringify(update));
+      } else {
+        assert(typeof this.playerSides.get(p.id) === 'number')
+        update.pid = this.playerSides.get(p.id) as number;
+        this.sendTo(p, JSON.stringify(update));
+      }
     });
 
 
@@ -417,27 +417,27 @@ export class Game {
 
     // Classic games can be draws
     if (!this.params.isTournament) {
-    	if (out + 1 >= this.params.nPlayers
-    	  || bestScore >= scoreTarget
-    	  || (timeRem <= 0) 
-    	) {
-		console.log('classic game, endint it');
-    	  this.endGame();
-    	}
+      if (out + 1 >= this.params.nPlayers
+        || bestScore >= scoreTarget
+        || (timeRem <= 0)
+      ) {
+        console.log('classic game, endint it');
+        this.endGame();
+      }
     } else {
-	    const p1Score = this.state.players[0]?.score;
-	    const p2Score = this.state.players[1]?.score;
-	    // bestScore >= scoreTarget
-	    if ((bestScore >= scoreTarget) && (p1Score != p2Score)) {
-		    console.log('best score is bigger than target and they arent the same so ending');
-		    this.endGame();
-		    return ;
-	    }
-	    if ((timeRem <= 0) && (p1Score != p2Score)) {
-		    console.log('no time left and scores are not the same so ending');
-		    this.endGame();
-		    return ;
-	    }
+      const p1Score = this.state.players[0]?.score;
+      const p2Score = this.state.players[1]?.score;
+      // bestScore >= scoreTarget
+      if ((bestScore >= scoreTarget) && (p1Score != p2Score)) {
+        console.log('best score is bigger than target and they arent the same so ending');
+        this.endGame();
+        return;
+      }
+      if ((timeRem <= 0) && (p1Score != p2Score)) {
+        console.log('no time left and scores are not the same so ending');
+        this.endGame();
+        return;
+      }
     }
 
   }
