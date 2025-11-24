@@ -102,7 +102,7 @@ const makeFriendCard =
     ).class("p-4 h-24 w-160 flex flex-row gap-4");
   };
 
-async function FriendCustomGame(id: number) {
+export async function FriendCustomGame(id: number) {
   await createCustomGame(2, [id]);
   CustomGamePage.isInDuel = true;
 }

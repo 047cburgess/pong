@@ -25,6 +25,7 @@ import {
 } from "./elements/SvgIcons";
 import { paths as ApiPaths } from "../PublicAPI";
 import { userFromMaybeId } from "../Util";
+import { FriendCustomGame } from "./Friends";
 
 const TILE_ANIM_KEY1 = ["opacity-0"];
 const TILE_ANIM_KEY2 = ["opacity-100"];
@@ -301,10 +302,6 @@ export default class DashboardPage extends Page {
 
     let buttons: AElement[] = [];
 
-    const inviteDuel = async () => {
-      // TODO
-      alert("Yeah sure");
-    };
     const removeFriend = (route: string, prompt: string) => async () => {
       const ok = confirm(prompt);
       if (!ok) {
@@ -349,7 +346,7 @@ export default class DashboardPage extends Page {
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
-            .withOnclick(inviteDuel)
+            .withOnclick(() => FriendCustomGame(this.userInfo!.id))
             .withId("invite-to-play-btn"),
         ];
         break;
@@ -388,7 +385,7 @@ export default class DashboardPage extends Page {
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
-            .withOnclick(inviteDuel)
+            .withOnclick(() => FriendCustomGame(this.userInfo!.id))
             .withId("invite-to-play-btn"),
         ];
         break;
@@ -402,7 +399,7 @@ export default class DashboardPage extends Page {
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)
             .class(DEFAULT_BUTTON)
-            .withOnclick(inviteDuel)
+            .withOnclick(() => FriendCustomGame(this.userInfo!.id))
             .withId("invite-to-play-btn"),
           new Div(new Inline(ICON_FRIEND_ADDED).class("self-center"))
             .class(HOW_TO_CENTER_A_DIV)

@@ -874,7 +874,7 @@ export class CustomGamePage extends Page {
             this.createGameHUD();
             this.startUIUpdates();
             this.stopForceExitWatcher();
-			break;
+            break;
           }
           case "game_end":
             this.onGameEnd(msg);
@@ -946,7 +946,6 @@ export class CustomGamePage extends Page {
       this.finalScores,
     );
     this.queueState = "finished";
-
   }
 
   //during game i guess
