@@ -182,7 +182,7 @@ class App {
   header: PageHeader;
   readonly headerRoot: HTMLElement;
   readonly popupDiv: HTMLElement;
-  evtSource: EventSource;
+  evtSource: EventSource | null;
   userInfo: SelfInfo | null;
 
   constructor(userInfo: SelfInfo | null) {
@@ -191,8 +191,12 @@ class App {
 
     this.popupDiv = document.getElementById("sse-pushups-zone")!;
 
-    this.evtSource = new EventSource("/api/v1/events");
-    this.evtSource.onmessage = (_e) => this.onMsg(_e);
+    if (userInfo) {
+    	this.evtSource = new EventSource("/api/v1/events");
+    	this.evtSource.onmessage = (_e) => this.onMsg(_e);
+    } else {
+	    this.evtSource = null;
+    }
 
     this.headerRoot = document.getElementsByTagName("header")[0] as HTMLElement;
     this.header = "fuck typescript" as any as PageHeader;
@@ -235,6 +239,8 @@ class App {
   onLogin(userInfo: SelfInfo) {
     this.userInfo = userInfo;
     this.reloadHeader();
+    this.evtSource = new EventSource("/api/v1/events");
+    this.evtSource.onmessage = (_e) => this.onMsg(_e);
   }
 
   onLogout() {
