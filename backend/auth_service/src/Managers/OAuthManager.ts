@@ -33,7 +33,6 @@ export class OAuthManager {
 	// --- Variables d'Environnement ---
 	private readonly GITHUB_CLIENT_ID: string;
 	private readonly GITHUB_CLIENT_SECRET: string;
-	private readonly GITHUB_REDIRECT_URI: string;
 
 	private readonly GITHUB_AUTHORIZE_URL = 'https://github.com/login/oauth/authorize';
 	private readonly GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';
@@ -42,12 +41,11 @@ export class OAuthManager {
 	private _stateStorage: Map<string, string> = new Map();
 
 	private constructor() {
-		if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET || !process.env.GITHUB_REDIRECT_URI) {
+		if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
 			throw new Error("Missing critical GitHub OAuth environment variables (CLIENT_ID, CLIENT_SECRET, or REDIRECT_URI).");
 		}
 		this.GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 		this.GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-		this.GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI!;
 	}
 
 	public static getInstance(): OAuthManager {
@@ -66,7 +64,6 @@ export class OAuthManager {
 
 		const params = new URLSearchParams({
 			client_id: this.GITHUB_CLIENT_ID,
-			redirect_uri: this.GITHUB_REDIRECT_URI,
 			scope: scope,
 			state: stateToken,
 		});
@@ -92,7 +89,6 @@ export class OAuthManager {
 			client_id: this.GITHUB_CLIENT_ID,
 			client_secret: this.GITHUB_CLIENT_SECRET,
 			code: code,
-			redirect_uri: this.GITHUB_REDIRECT_URI,
 		});
 
 		const response = await fetch(this.GITHUB_TOKEN_URL, {

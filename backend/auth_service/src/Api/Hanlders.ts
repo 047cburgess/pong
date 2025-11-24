@@ -27,8 +27,9 @@ export const JwtCookieChecker: onRequestAsyncHookHandler = async (request, reply
 export const authErrorHandler = (error: unknown, request: FastifyRequest, reply: FastifyReply) => {
     if (error instanceof TwoFactorRequiredError) {
         reply.setCookie("token2FA", error.token, {
+            path: "/api/v1/user/login", 
             httpOnly: true,
-            sameSite: "strict",
+            sameSite: "lax",
             secure: "auto",
             maxAge: 60 * 5 
         });

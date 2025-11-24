@@ -99,8 +99,9 @@ export async function AuthPlugin(server: FastifyInstance) {
 		const JWTtoken = AuthManager.getInstance().login2FA(parseInt(token2FA), code);
 
 		reply.clearCookie("token2FA", {
+			path: "/api/v1/user/login",
 			httpOnly: true,
-			sameSite: "strict",
+			sameSite: "lax",
 			secure: "auto",
 		});
 
