@@ -51,7 +51,6 @@ export default class GameTournamentLocalPage extends Page {
   private semi1Result: GameResult | null = null;
   private semi2Result: GameResult | null = null;
   private finalResult: GameResult | null = null;
-  private tournamentSaved: boolean = false;
 
   // Match pairings - indices refer to positions in playerNames array
   private semi1Players: [number, number] = [0, 1]; // Players 1 vs 2
@@ -65,7 +64,6 @@ export default class GameTournamentLocalPage extends Page {
   private controlsDisplay!: Div;
   private startBtn!: Button;
   private startMatchBtn!: Button;
-  private saveTournamentBtn!: Button;
   private newTournamentBtn!: Button;
   private readyBtn!: Button;
   private backToTournamentBtn!: Button;
@@ -89,7 +87,6 @@ export default class GameTournamentLocalPage extends Page {
     this.semi1Result = null;
     this.semi2Result = null;
     this.finalResult = null;
-    this.tournamentSaved = false;
     this.semi1Players = [0, 1];
     this.semi2Players = [2, 3];
     this.finalPlayers = [0, 0];
@@ -120,10 +117,6 @@ export default class GameTournamentLocalPage extends Page {
     APP.headerRoot.style.display = "none";
     this.winnerAnnouncement.class("hidden");
     this.winnerAnnouncement.redraw();
-
-    // Reset button visibility to setup state
-    this.saveTournamentBtn.class("hidden");
-    this.saveTournamentBtn.redraw();
 
     this.newTournamentBtn.class("hidden");
     this.newTournamentBtn.redraw();
@@ -236,15 +229,6 @@ export default class GameTournamentLocalPage extends Page {
       ),
     ).class("flex flex-col");
 
-    // Primary action: Save Tournament (pink)
-    this.saveTournamentBtn = new Button(
-      new Paragraph("Save Tournament").class("py-3 px-8"),
-    )
-      .class(PRIMARY_BUTTON)
-      .class("hidden")
-      .withId("save-tournament-btn")
-      .withOnclick(() => this.handleSaveTournament()) as Button;
-
     // Secondary action: New Tournament (less prominent - using default gray)
     this.newTournamentBtn = new Button(
       new Paragraph("New Tournament").class("py-2 px-6"),
@@ -263,11 +247,9 @@ export default class GameTournamentLocalPage extends Page {
         "text-4xl font-bold text-white mb-8",
       ),
       this.winnerAnnouncement,
-      new Div(
-        this.startMatchBtn,
-        this.saveTournamentBtn,
-        this.newTournamentBtn,
-      ).class("flex justify-center gap-4 mb-6"),
+      new Div(this.startMatchBtn, this.newTournamentBtn).class(
+        "flex justify-center gap-4 mb-6",
+      ),
       new Div(inputColumn, semifinalsColumn, finalColumn).class(
         "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-16 max-w-6xl mx-auto",
       ),
@@ -365,7 +347,6 @@ export default class GameTournamentLocalPage extends Page {
     APP.headerRoot.style.display = "none";
     this.startBtn.bindEvents();
     this.startMatchBtn.bindEvents();
-    this.saveTournamentBtn.bindEvents();
     this.newTournamentBtn.bindEvents();
     this.readyBtn.bindEvents();
     this.backToTournamentBtn.bindEvents();
@@ -1175,12 +1156,6 @@ export default class GameTournamentLocalPage extends Page {
     this.winnerAnnouncement.redrawInner();
     this.winnerAnnouncement.byId()?.classList.remove("hidden");
 
-    // Show save button and new tournament button, hide start match button
-    const saveBtn = this.saveTournamentBtn.byId();
-    if (saveBtn) {
-      saveBtn.classList.remove("hidden");
-    }
-
     const newTournamentBtn = this.newTournamentBtn.byId();
     if (newTournamentBtn) {
       newTournamentBtn.classList.remove("hidden");
@@ -1193,74 +1168,6 @@ export default class GameTournamentLocalPage extends Page {
 
     // Restore header when tournament is finished
     APP.headerRoot.style.display = "";
-  }
-
-  // Send tournament results to backend for storage
-  private async handleSaveTournament(): Promise<void> {
-    // Prevent duplicate saves
-    if (this.tournamentSaved) {
-      alert("This tournament has already been saved.");
-      return;
-    }
-
-    if (!this.semi1Result || !this.semi2Result || !this.finalResult) {
-      alert("Tournament is not complete");
-      return;
-    }
-
-    const payload = {
-      participants: this.playerNames.map((name, i) => ({
-        id: i === 0 ? APP.userInfo!.id : name,
-      })),
-      games: {
-        semifinal1: {
-          gameId: this.semi1Result.gameId,
-          players: this.semi1Result.players.map((p) => ({
-            id: p.id,
-            score: p.score,
-          })),
-          winnerId: this.semi1Result.winnerId,
-          duration: this.semi1Result.duration,
-        },
-        semifinal2: {
-          gameId: this.semi2Result.gameId,
-          players: this.semi2Result.players.map((p) => ({
-            id: p.id,
-            score: p.score,
-          })),
-          winnerId: this.semi2Result.winnerId,
-          duration: this.semi2Result.duration,
-        },
-        final: {
-          gameId: this.finalResult.gameId,
-          players: this.finalResult.players.map((p) => ({
-            id: p.id,
-            score: p.score,
-          })),
-          winnerId: this.finalResult.winnerId,
-          duration: this.finalResult.duration,
-        },
-      },
-    };
-
-    try {
-      const response = await fetch("/api/v1/user/tournaments/local", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        credentials: "include",
-      });
-
-      if (response.ok || response.status === 204) {
-        this.tournamentSaved = true;
-        alert("Tournament saved successfully!");
-      } else {
-        throw new Error("Failed to save tournament");
-      }
-    } catch (error) {
-      console.error("Failed to save tournament:", error);
-      alert("Failed to save tournament. Please try again.");
-    }
   }
 
   private resetGame(): void {

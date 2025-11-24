@@ -1,16 +1,7 @@
 import Router, { Page } from "../Router";
-import {
-  AElement,
-  Div,
-  Paragraph,
-  Button,
-  Header,
-  AContainer,
-} from "./elements/Elements";
+import { AElement, Div, Paragraph, Button, Header } from "./elements/Elements";
 import { DEFAULT_BUTTON } from "./elements/CssUtils";
-import { stringify } from "querystring";
-import { APP, createCustomGame } from "../App";
-import { gameKeys } from "./CustomGame";
+import { createCustomGame } from "../App";
 
 type MenuState = "main" | "local" | "online";
 
@@ -189,21 +180,6 @@ export class Online_Menu extends Div {
     .withId("Play-OnlineMenu-customgamebutton-div")
     .class("flex flex-row gap-4 w-full justify-center max-w-md") as Div;
 
-  private Online_TournamentBTn = new Button(
-    new Div(
-      new Header(2, "Tournament").class("text-xl font-bold"),
-      new Paragraph("Create a 4pl tournament").class(
-        "text-neutral-400 text-sm",
-      ),
-    ).class("flex flex-col items-center gap-2 py-4 px-8"),
-  )
-    .class(DEFAULT_BUTTON)
-    .class("w-full max-w-md")
-    .withId("btn-online-tournament")
-    .withOnclick(() => {
-      this.router.navigate("/tournaments/create");
-    }) as Button;
-
   private Back_button = new Button(new Paragraph("Back").class("py-3 px-8"))
     .class(DEFAULT_BUTTON)
     .class("w-full max-w-md mt-4 opacity-70 hover:opacity-100")
@@ -217,7 +193,9 @@ export class Online_Menu extends Div {
     private backmethod: () => any,
   ) {
     super();
-    this.Back_button = this.Back_button.withOnclick(this.backmethod) as Button;
+    this.Back_button = this.Back_button.withOnclick(
+      this.OnclickBack.bind(this),
+    ) as Button;
 
     this.custom_selection_buttons = [2, 3, 4].map((i) =>
       new Button(new Paragraph(`${i}j`).class("w-full text-center"))
@@ -229,7 +207,6 @@ export class Online_Menu extends Div {
     this.mainDiv.addContentWithAppend([
       this.QuickMatchButton,
       this.customGameDiv,
-      this.Online_TournamentBTn,
       this.Back_button,
     ]);
     this.customGameDiv.addContentWithAppend(this.CustomGameButton);

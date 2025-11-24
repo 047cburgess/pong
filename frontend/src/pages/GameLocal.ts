@@ -2,7 +2,7 @@
 // TODO: Check usage of the router APP calls -> not currently doing it properly. Schemas.
 
 import { APP } from "../App";
-import Router, { NavError, Page } from "../Router";
+import { Page } from "../Router";
 import {
   AElement,
   Div,
@@ -29,11 +29,9 @@ export default class GameLocalPage extends Page {
   private canvasId = "gameCanvas";
   private gameInstance: PongApp | null = null;
   private gameKeys: GameKey[] = [];
-  private gameId: string = "";
   private nPlayers: number = 2;
   private finalScores: { player: number; score: number }[] = [];
   private gameDuration: number = 0;
-  private gameSaved: boolean = false;
   private readonly CONTROL_KEYS = ["W/S", "J/U", "T/Y", "V/B"];
 
   content(): AElement[] {
@@ -144,12 +142,6 @@ export default class GameLocalPage extends Page {
               new Div().withId("final-scores").class("mb-8"),
 
               new Div(
-                new Button(new Paragraph("Save Game").class("py-3 px-8"))
-                  .class(DEFAULT_BUTTON)
-                  .class("bg-blue-600 hover:bg-blue-700")
-                  .withId("save-btn")
-                  .withOnclick(() => this.saveGame()),
-
                 new Button(new Paragraph("Play Again").class("py-3 px-8"))
                   .class(DEFAULT_BUTTON)
                   .class("bg-green-600 hover:bg-green-700")
@@ -250,7 +242,6 @@ export default class GameLocalPage extends Page {
     try {
       console.log("Calling api to get new local game");
       this.gameKeys = await createLocalGame(nPlayers);
-      this.gameId = this.gameKeys[0].gameId;
 
       console.log("Local game created:", this.gameKeys);
 
@@ -482,14 +473,8 @@ export default class GameLocalPage extends Page {
     console.log("Binding game over buttons...");
 
     setTimeout(() => {
-      const saveBtn = document.getElementById("save-btn");
       const playAgainBtn = document.getElementById("play-again-btn");
       const exitBtn = document.getElementById("exit-btn");
-
-      if (saveBtn) {
-        console.log("Binding save button");
-        saveBtn.onclick = () => this.saveGame();
-      }
 
       if (playAgainBtn) {
         console.log("Binding play again button");
@@ -565,52 +550,6 @@ export default class GameLocalPage extends Page {
     scoresContainer.innerHTML = winnerHTML + scoresHTML;
   }
 
-  private async saveGame(): Promise<void> {
-    // Prevent duplicate saves
-    if (this.gameSaved) {
-      alert("This game has already been saved.");
-      return;
-    }
-
-    try {
-      const sorted = [...this.finalScores].sort((a, b) => b.score - a.score);
-      const topScore = sorted[0].score;
-      const winners = sorted.filter((s) => s.score === topScore);
-
-      // Prepare submission data
-      const submission = {
-        gameId: this.gameId,
-        players: this.finalScores.map((s) => ({
-          id: s.player === 1 ? APP.userInfo!.id : `Player${s.player}`,
-          score: s.score,
-        })),
-        winnerId:
-          winners.length === 1 ?
-            winners[0].player === 1 ?
-              APP.userInfo!.id
-            : `Player${winners[0].player}`
-          : undefined,
-        duration: this.gameDuration, // Already in ISO 8601 format from backend
-      };
-
-      const response = await fetch("/api/v1/user/games/local", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submission),
-      });
-
-      if (response.ok || response.status === 204) {
-        this.gameSaved = true;
-        alert("Game saved successfully!");
-      } else {
-        throw new Error("Failed to save game");
-      }
-    } catch (error) {
-      console.error("Error saving game:", error);
-      alert("Failed to save game. Please try again.");
-    }
-  }
-
   private resetGame(): void {
     if (this.gameInstance) {
       //ADDED: to clean up all resources
@@ -631,10 +570,8 @@ export default class GameLocalPage extends Page {
     }
 
     this.gameKeys = [];
-    this.gameId = "";
     this.finalScores = [];
     this.gameDuration = 0;
-    this.gameSaved = false;
     this.nPlayers = 2;
   }
 }
