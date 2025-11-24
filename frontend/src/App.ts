@@ -192,10 +192,10 @@ class App {
     this.popupDiv = document.getElementById("sse-pushups-zone")!;
 
     if (userInfo) {
-    	this.evtSource = new EventSource("/api/v1/events");
-    	this.evtSource.onmessage = (_e) => this.onMsg(_e);
+      this.evtSource = new EventSource("/api/v1/events");
+      this.evtSource.onmessage = (_e) => this.onMsg(_e);
     } else {
-	    this.evtSource = null;
+      this.evtSource = null;
     }
 
     this.headerRoot = document.getElementsByTagName("header")[0] as HTMLElement;
