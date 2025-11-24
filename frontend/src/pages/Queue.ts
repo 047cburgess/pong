@@ -355,7 +355,7 @@ export default class QueuePage extends Page {
     const myAvatar =
       APP.userInfo?.username ?
         `/api/v1/user/avatars/${APP.userInfo.username}.webp`
-      : undefined;
+        : undefined;
     this.myAvatarUrl = myAvatar;
 
     // HUD shows you on left, opponent on right
@@ -495,7 +495,7 @@ export default class QueuePage extends Page {
     const players =
       msg.players?.length > 0 ?
         msg.players
-      : this.gameInstance?.gameState?.players;
+        : this.gameInstance?.gameState?.players;
     if (players) {
       this.finalScores = players.map((p: any, idx: number) => ({
         player: idx + 1,
@@ -552,14 +552,14 @@ export default class QueuePage extends Page {
 
     const createAvatar = (avatarUrl: string | undefined, color: string) => {
       return avatarUrl ?
-          new Div()
-            .class("w-10 h-10 rounded-full")
-            .withStyle(
-              `background-image: url('${avatarUrl}'); background-size: cover; background-position: center; outline: 2px solid ${color};`,
-            )
+        new Div()
+          .class("w-10 h-10 rounded-full")
+          .withStyle(
+            `background-image: url('${avatarUrl}'); background-size: cover; background-position: center; outline: 2px solid ${color};`,
+          )
         : new Div()
-            .class("w-10 h-10 rounded-full")
-            .withStyle(`background: ${color}; outline: 2px solid ${color};`);
+          .class("w-10 h-10 rounded-full")
+          .withStyle(`background: ${color}; outline: 2px solid ${color};`);
     };
 
     const myCard = new Div(
@@ -595,6 +595,7 @@ export default class QueuePage extends Page {
     }
 
     this.finalScoresDiv.contents = elements;
+    this.finalScoresDiv.contents.forEach(x => x.class("min-w-90"));
     this.finalScoresDiv.redrawInner();
   }
 

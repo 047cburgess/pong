@@ -692,17 +692,17 @@ export default class GameTournamentLocalPage extends Page {
     const players =
       msg.players?.length > 0 ?
         msg.players
-      : this.gameInstance?.gameState?.players;
+        : this.gameInstance?.gameState?.players;
     if (!players) return;
 
     const player1Id =
       playerIndices[0] === 0 ?
         APP.userInfo!.id
-      : this.playerNames[playerIndices[0]];
+        : this.playerNames[playerIndices[0]];
     const player2Id =
       playerIndices[1] === 0 ?
         APP.userInfo!.id
-      : this.playerNames[playerIndices[1]];
+        : this.playerNames[playerIndices[1]];
 
     // Determine winner: if player 1 (index 0 in game) won, use player1Id, else use player2Id
     const winnerId =
@@ -737,12 +737,12 @@ export default class GameTournamentLocalPage extends Page {
           result.winnerId =
             winnerIndex === playerIndices[0] ?
               result.players[0].id
-            : result.players[1].id;
+              : result.players[1].id;
         } else {
           winnerIndex =
             result.winnerId === result.players[0].id ?
               playerIndices[0]
-            : playerIndices[1];
+              : playerIndices[1];
         }
         this.finalPlayers[0] = winnerIndex;
         this.tournamentState = "semi2";
@@ -759,12 +759,12 @@ export default class GameTournamentLocalPage extends Page {
           result.winnerId =
             winnerIndex === playerIndices[0] ?
               result.players[0].id
-            : result.players[1].id;
+              : result.players[1].id;
         } else {
           winnerIndex =
             result.winnerId === result.players[0].id ?
               playerIndices[0]
-            : playerIndices[1];
+              : playerIndices[1];
         }
         this.finalPlayers[1] = winnerIndex;
         this.tournamentState = "final";
@@ -897,6 +897,7 @@ export default class GameTournamentLocalPage extends Page {
     });
 
     this.gameOverScoresDiv.contents = [winnerElement, ...scoreElements];
+    this.gameOverScoresDiv.contents.forEach(x => x.class("min-w-90"));
     this.gameOverScoresDiv.redrawInner();
 
     // Show game over overlay
