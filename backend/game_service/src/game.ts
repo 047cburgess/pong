@@ -218,6 +218,7 @@ export class Game {
   }
 
   removePlayer(pid: PlayerId) {
+    return;
     this.players.delete(pid);
   }
 
