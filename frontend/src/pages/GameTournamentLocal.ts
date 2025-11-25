@@ -251,7 +251,7 @@ export default class GameTournamentLocalPage extends Page {
         "flex justify-center gap-4 mb-6",
       ),
       new Div(inputColumn, semifinalsColumn, finalColumn).class(
-        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-16 max-w-6xl mx-auto",
+        "grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-16 max-w-6xl mx-auto",
       ),
     ).class(
       "flex flex-col justify-center items-center min-h-screen p-8",

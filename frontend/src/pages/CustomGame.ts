@@ -19,6 +19,7 @@ import {
   INPUT_BOX_OUTLINE,
   INPUT_BOX_RED_OUTLINE,
   PLAYER_COLOURS,
+  PLAYER_COLOUR_CLASSES,
   TIMER_COUNTDOWN,
   TIMER_NORMAL,
   VICTORY_COLOR,
@@ -45,7 +46,7 @@ export type PageArgs = gameKeys & { nb_players: number };
 /*===================================================================
 
 
-	.1WatingMenu
+  .1WatingMenu
 
 
 
@@ -90,7 +91,7 @@ export class WaitingMenu extends GameOverlay {
       const size = "width: 45%; height: 45%; position: absolute;";
       if (total === 2) {
         return index === 0 ?
-            `${size} top: 27.5%; left: 2.5%;`
+          `${size} top: 27.5%; left: 2.5%;`
           : `${size} top: 27.5%; right: 2.5%;`;
       } else {
         const isTop = index < 2;
@@ -101,7 +102,7 @@ export class WaitingMenu extends GameOverlay {
     for (let i = 0; i < nb_players; i++) {
       const style = getPositionStyle(i, nb_players);
       let color: string | undefined = undefined;
-      let slotClick = () => {};
+      let slotClick = () => { };
       let UserInf: UserInfo | undefined;
 
       if (Users[i] === undefined) {
@@ -270,10 +271,17 @@ export class InviteMenu extends GameOverlay {
   private async selectFriend(id: number) {
     const state = InviteMenu.friendState.get(id);
     if (state && state.border === "green") return;
-    else InviteMenu.friendState.set(id, { border: "blue" });
+    if (state && state.border === "blue") return;
+    // else InviteMenu.friendState.set(id, { border: "blue" });
     try {
-      await this.invite(id);
-    } catch {}
+      const resp = await this.invite(id);
+      const data = await resp.json();
+      if (resp.ok && data.invitedPlayers.length !== 0) {
+        InviteMenu.friendState.set(id, { border: "blue" });
+      } else {
+        InviteMenu.friendState.set(id, { border: "red" });
+      }
+    } catch { }
     this.applyFriendStyles();
   }
 
@@ -288,10 +296,10 @@ export class InviteMenu extends GameOverlay {
       else {
         border =
           st.border === "blue" ? "border border-blue-500"
-          : st.border === "red" ? "border border-red-700"
-          : st.border === "green" ?
-            "border border-emerald-700 border-emerald-700"
-          : "border border-transparent";
+            : st.border === "red" ? "border border-red-700"
+              : st.border === "green" ?
+                "border border-emerald-700 border-emerald-700"
+                : "border border-transparent";
       }
       el.removeClass("border-blue-500 border-red-700 border-transparent");
       el.class(`${border}`);
@@ -316,11 +324,11 @@ export class InviteMenu extends GameOverlay {
     });
     if (resp.ok) friends = (await resp.json()) as UserInfo[];
     if (!friends) friends = [];
-    const onlineFriends = friends.filter(
+    const onlineFriends = friends; /* .filter(
       (friend) =>
         !friend.lastSeen
         || Date.now() - new Date(friend.lastSeen).getTime() <= 5 * 60 * 1000,
-    );
+    ); */
 
     const newfriendElements = onlineFriends.map((friend) =>
       new Div(
@@ -347,75 +355,75 @@ export class InviteMenu extends GameOverlay {
 }
 /*
 export class GameEndMenu extends GameOverlay {
-	private finalScoresDiv = new Div()
-		.withId("final-scores")
-		.class("mb-8") as Div;
+  private finalScoresDiv = new Div()
+    .withId("final-scores")
+    .class("mb-8") as Div;
 
-	private resultParagraph: Paragraph = new Paragraph("UNKNOWN").withId(
-		"ResultParagraph",
-	) as Paragraph;
-	private resultDiv: Div = new Div().class("mb-6 text-center") as Div;
+  private resultParagraph: Paragraph = new Paragraph("UNKNOWN").withId(
+    "ResultParagraph",
+  ) as Paragraph;
+  private resultDiv: Div = new Div().class("mb-6 text-center") as Div;
 
-	private gameOverParagrpah = new Paragraph("Game Over!").class(
-		"text-4xl font-bold text-white mb-8 text-center",
-	) as Paragraph;
+  private gameOverParagrpah = new Paragraph("Game Over!").class(
+    "text-4xl font-bold text-white mb-8 text-center",
+  ) as Paragraph;
 
-	private exitButtonDiv = new Div().class("flex gap-4 justify-center");
-	private exitButton = new Button(new Paragraph("Exit").class("py-3 px-8"))
-		.class(DEFAULT_BUTTON)
-		.withId("exit-btn") as Button;
+  private exitButtonDiv = new Div().class("flex gap-4 justify-center");
+  private exitButton = new Button(new Paragraph("Exit").class("py-3 px-8"))
+    .class(DEFAULT_BUTTON)
+    .withId("exit-btn") as Button;
 
-	private main_content = new Div().withId("gameover-maindiv") as Div;
+  private main_content = new Div().withId("gameover-maindiv") as Div;
 
-	constructor(private onClick: () => any) {
-		super();
+  constructor(private onClick: () => any) {
+    super();
 
-		this.exitButton.withOnclick(this.onClick.bind(this));
-		this.main_content.addContent([
-			this.gameOverParagrpah,
-			this.finalScoresDiv,
-			this.exitButtonDiv,
-		]);
-		this.resultDiv.addContent(this.resultParagraph);
+    this.exitButton.withOnclick(this.onClick.bind(this));
+    this.main_content.addContent([
+      this.gameOverParagrpah,
+      this.finalScoresDiv,
+      this.exitButtonDiv,
+    ]);
+    this.resultDiv.addContent(this.resultParagraph);
 
-		this.contents = [this.main_content];
-	}
+    this.contents = [this.main_content];
+  }
 
-	displayFinalScores(
-		myPid: number,
-		users: UserInfo[],
-		finalScores: { pid: number; score: number }[],
-	): void {
-		const elements: AElement[] = [];
+  displayFinalScores(
+    myPid: number,
+    users: UserInfo[],
+    finalScores: { pid: number; score: number }[],
+  ): void {
+    const elements: AElement[] = [];
 
-		const rankedScores = finalScores
-			.map((data, pid) => ({ pid: pid, score: data.score }))
-			.sort((a, b) => b.score - a.score);
+    const rankedScores = finalScores
+      .map((data, pid) => ({ pid: pid, score: data.score }))
+      .sort((a, b) => b.score - a.score);
 
-		const winner = rankedScores[0];
-		const second = rankedScores[1];
-		const isDraw = winner.score === second.score;
+    const winner = rankedScores[0];
+    const second = rankedScores[1];
+    const isDraw = winner.score === second.score;
 
-		if (isDraw) {
-			{
-				this.resultParagraph.withStyle(`color : ${DRAW_COLOR};`);
-				this.resultParagraph.set_TextContent("Draw!");
-			}
-		} else if (winner.pid === myPid) {
-			this.resultParagraph.withStyle(`color : ${VICTORY_COLOR};`);
-			this.resultParagraph.set_TextContent("VICTORY!");
-		} else {
-			this.resultParagraph.withStyle(`color : ${DEFEAT_COLOR};`);
-			this.resultParagraph.set_TextContent("DEFEAT....");
-		}
-		this.finalScoresDiv.redrawInner();
-	}
+    if (isDraw) {
+      {
+        this.resultParagraph.withStyle(`color : ${DRAW_COLOR};`);
+        this.resultParagraph.set_TextContent("Draw!");
+      }
+    } else if (winner.pid === myPid) {
+      this.resultParagraph.withStyle(`color : ${VICTORY_COLOR};`);
+      this.resultParagraph.set_TextContent("VICTORY!");
+    } else {
+      this.resultParagraph.withStyle(`color : ${DEFEAT_COLOR};`);
+      this.resultParagraph.set_TextContent("DEFEAT....");
+    }
+    this.finalScoresDiv.redrawInner();
+  }
 }
 */
 /*==========================================================================
 
 
-							..PlayerCard
+              ..PlayerCard
 
 
 ============================================================================*/
@@ -548,7 +556,7 @@ export class PlayerCard extends Div {
           this.UnAppendContent(this.overlayPlus);
         });
       }
-      this.withOnclick(this.onClick?.bind(this) ?? (() => {}));
+      this.withOnclick(this.onClick?.bind(this) ?? (() => { }));
       this.bindEvents();
     });
   }
@@ -557,8 +565,8 @@ export class PlayerCard extends Div {
     const el = this.byId();
     if (!el) return;
 
-    this.withOnEnter(() => {});
-    this.withOnLeave(() => {});
+    this.withOnEnter(() => { });
+    this.withOnLeave(() => { });
   }
 
   private killWaitingDots() {
@@ -571,10 +579,10 @@ export class PlayerCard extends Div {
 
 //TODO
 /*
-	on join after invite then not host
-	on create then host
+  on join after invite then not host
+  on create then host
 
-	need to manage dynamic update for  client since he does not know how many players there is 
+  need to manage dynamic update for  client since he does not know how many players there is 
 */
 export class CustomGamePage extends Page {
   static isInDuel = false;
@@ -743,15 +751,15 @@ export class CustomGamePage extends Page {
       const position: "left" | "right" =
         nbPlayers === 2 ?
           isMe ? "left"
-          : "right"
-        : pid % 2 === 0 ? "left"
-        : "right";
+            : "right"
+          : pid % 2 === 0 ? "left"
+            : "right";
 
       if (isMe) {
         const myAvatar =
           APP.userInfo?.username ?
             `/api/v1/user/avatars/${APP.userInfo.username}.webp`
-          : undefined;
+            : undefined;
         this.myAvatarUrl = myAvatar;
         return new PlayerAvatar("You", scoreId, color, position, myAvatar);
       }
@@ -761,7 +769,7 @@ export class CustomGamePage extends Page {
       const playerAvatar =
         ingamePlayer?.User.username ?
           `/api/v1/user/avatars/${ingamePlayer.User.username}.webp`
-        : `/api/v1/user/avatars/default.webp`;
+          : `/api/v1/user/avatars/default.webp`;
 
       return new PlayerAvatar(
         playerName,
@@ -938,7 +946,7 @@ export class CustomGamePage extends Page {
     const playersData =
       msg.players?.length > 0 ?
         msg.players
-      : this.gameInstance?.gameState?.players;
+        : this.gameInstance?.gameState?.players;
 
     if (playersData) {
       this.finalScores = playersData.map((p: any, idx: number) => ({
@@ -958,14 +966,14 @@ export class CustomGamePage extends Page {
 
     const createAvatar = (avatarUrl: string | undefined, color: string) => {
       return avatarUrl ?
-          new Div()
-            .class("w-10 h-10 rounded-full")
-            .withStyle(
-              `background-image: url('${avatarUrl}'); background-size: cover; background-position: center; outline: 2px solid ${color};`,
-            )
+        new Div()
+          .class("w-10 h-10 rounded-full")
+          .withStyle(
+            `background-image: url('${avatarUrl}'); background-size: cover; background-position: center; outline: 2px solid ${color};`,
+          )
         : new Div()
-            .class("w-10 h-10 rounded-full")
-            .withStyle(`background: ${color}; outline: 2px solid ${color};`);
+          .class("w-10 h-10 rounded-full")
+          .withStyle(`background: ${color}; outline: 2px solid ${color};`);
     };
 
     const leaderboard = this.IngamePlayers.map((playerData) => {
@@ -1020,10 +1028,18 @@ export class CustomGamePage extends Page {
 
     leaderboard.forEach((player) => {
       const playerColor = PLAYER_COLOURS[player.pid];
+      const playerColorClass = PLAYER_COLOUR_CLASSES[player.pid];
+
+      const username = player.isMe ? APP.userInfo!.username
+        : player.username;
 
       const card = new Div(
         new Div(
-          player.avatar,
+          // player.avatar,
+          new Div(new Image("/api/v1/user/avatars/" + username + ".webp"))
+            .class(AVATAR_DIV)
+            .class("h-14")
+            .class(`outline-2 outline-${playerColorClass} bg-${playerColorClass}`),
           new Paragraph(player.username).class("text-xl font-bold text-white"),
         ).class("flex items-center gap-4"),
         new Paragraph(String(player.score))
@@ -1062,7 +1078,7 @@ export class CustomGamePage extends Page {
 
       const { gameState, params } = this.gameInstance;
 
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < this.gameInstance.params.nPlayers; i++) {
         const scoreEl = document.getElementById(`score-${i}`);
         if (scoreEl && gameState.players?.[i]) {
           scoreEl.textContent = String(gameState.players[i].score);
@@ -1093,10 +1109,10 @@ export class CustomGamePage extends Page {
   }
 
   /*=================================================================
-			    
-								  Buttons Actions
-			    
-		  ===================================================================*/
+          
+                  Buttons Actions
+          
+      ===================================================================*/
   openInvitePanel() {
     console.log("");
     this.queueState = "inviting";

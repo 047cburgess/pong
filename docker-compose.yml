@@ -9,6 +9,7 @@ services:
       - 8080:443
     depends_on:
       - auth-service
+    restart: unless-stopped
 
   auth-service:
     build:
