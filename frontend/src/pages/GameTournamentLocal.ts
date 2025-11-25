@@ -340,7 +340,12 @@ export default class GameTournamentLocalPage extends Page {
       .withId("game-screen")
       .class("relative w-full h-screen overflow-hidden hidden") as Div;
 
-    return [this.setupScreen, this.gameScreen];
+    return [
+      new Div(
+        this.setupScreen,
+        this.gameScreen,
+      ).class("relative w-full h-screen overflow-hidden")
+    ];
   }
 
   bindEvents(): void {
