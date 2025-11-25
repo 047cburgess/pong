@@ -1,4 +1,3 @@
-// TODO: add a pause when there's low bandwidth from a player to allow to catch up?
 import assert from 'assert';
 import { randomUUID } from 'crypto';
 import type { WebSocket as WS } from "@fastify/websocket";

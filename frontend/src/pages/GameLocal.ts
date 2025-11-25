@@ -1,6 +1,3 @@
-// TODO: Handle when click back in browser during game then go back in -> 2 games as once and buggy
-// TODO: Check usage of the router APP calls -> not currently doing it properly. Schemas.
-
 import { APP } from "../App";
 import { Page } from "../Router";
 import {

@@ -95,7 +95,6 @@ const makeFriendCard =
           .class("pl-4 pr-4 flex gap-2 h-8")
           .class(DEFAULT_BUTTON)
           .class(HOW_TO_CENTER_A_DIV)
-          // TODO(Vaiva): Invite friend to play
           .withOnclick(() => FriendCustomGame(f.id))
           .withId(`friends-page-invite-${i}`),
       ).class("flex flex-row gap-4 self-center"),

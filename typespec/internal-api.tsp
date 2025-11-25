@@ -1,4 +1,3 @@
-/* TODO: check about protecting internal api routes -> key needed?*/
 import "@typespec/http";
 import "@typespec/rest";
 

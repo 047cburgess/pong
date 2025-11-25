@@ -32,7 +32,6 @@ export default class LogoutPage extends Page {
     try {
       resp = await fetch("/api/v1/user/logout", { method: "POST" });
     } catch (e: any) {
-      // TODO
       return;
     }
 

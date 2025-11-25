@@ -91,7 +91,7 @@ export class WaitingMenu extends GameOverlay {
       const size = "width: 45%; height: 45%; position: absolute;";
       if (total === 2) {
         return index === 0 ?
-          `${size} top: 27.5%; left: 2.5%;`
+            `${size} top: 27.5%; left: 2.5%;`
           : `${size} top: 27.5%; right: 2.5%;`;
       } else {
         const isTop = index < 2;
@@ -102,7 +102,7 @@ export class WaitingMenu extends GameOverlay {
     for (let i = 0; i < nb_players; i++) {
       const style = getPositionStyle(i, nb_players);
       let color: string | undefined = undefined;
-      let slotClick = () => { };
+      let slotClick = () => {};
       let UserInf: UserInfo | undefined;
 
       if (Users[i] === undefined) {
@@ -281,7 +281,7 @@ export class InviteMenu extends GameOverlay {
       } else {
         InviteMenu.friendState.set(id, { border: "red" });
       }
-    } catch { }
+    } catch {}
     this.applyFriendStyles();
   }
 
@@ -296,10 +296,10 @@ export class InviteMenu extends GameOverlay {
       else {
         border =
           st.border === "blue" ? "border border-blue-500"
-            : st.border === "red" ? "border border-red-700"
-              : st.border === "green" ?
-                "border border-emerald-700 border-emerald-700"
-                : "border border-transparent";
+          : st.border === "red" ? "border border-red-700"
+          : st.border === "green" ?
+            "border border-emerald-700 border-emerald-700"
+          : "border border-transparent";
       }
       el.removeClass("border-blue-500 border-red-700 border-transparent");
       el.class(`${border}`);
@@ -556,7 +556,7 @@ export class PlayerCard extends Div {
           this.UnAppendContent(this.overlayPlus);
         });
       }
-      this.withOnclick(this.onClick?.bind(this) ?? (() => { }));
+      this.withOnclick(this.onClick?.bind(this) ?? (() => {}));
       this.bindEvents();
     });
   }
@@ -565,8 +565,8 @@ export class PlayerCard extends Div {
     const el = this.byId();
     if (!el) return;
 
-    this.withOnEnter(() => { });
-    this.withOnLeave(() => { });
+    this.withOnEnter(() => {});
+    this.withOnLeave(() => {});
   }
 
   private killWaitingDots() {
@@ -577,13 +577,6 @@ export class PlayerCard extends Div {
   }
 }
 
-//TODO
-/*
-  on join after invite then not host
-  on create then host
-
-  need to manage dynamic update for  client since he does not know how many players there is 
-*/
 export class CustomGamePage extends Page {
   static isInDuel = false;
   static forceExit = false;
@@ -751,15 +744,15 @@ export class CustomGamePage extends Page {
       const position: "left" | "right" =
         nbPlayers === 2 ?
           isMe ? "left"
-            : "right"
-          : pid % 2 === 0 ? "left"
-            : "right";
+          : "right"
+        : pid % 2 === 0 ? "left"
+        : "right";
 
       if (isMe) {
         const myAvatar =
           APP.userInfo?.username ?
             `/api/v1/user/avatars/${APP.userInfo.username}.webp`
-            : undefined;
+          : undefined;
         this.myAvatarUrl = myAvatar;
         return new PlayerAvatar("You", scoreId, color, position, myAvatar);
       }
@@ -769,7 +762,7 @@ export class CustomGamePage extends Page {
       const playerAvatar =
         ingamePlayer?.User.username ?
           `/api/v1/user/avatars/${ingamePlayer.User.username}.webp`
-          : `/api/v1/user/avatars/default.webp`;
+        : `/api/v1/user/avatars/default.webp`;
 
       return new PlayerAvatar(
         playerName,
@@ -946,7 +939,7 @@ export class CustomGamePage extends Page {
     const playersData =
       msg.players?.length > 0 ?
         msg.players
-        : this.gameInstance?.gameState?.players;
+      : this.gameInstance?.gameState?.players;
 
     if (playersData) {
       this.finalScores = playersData.map((p: any, idx: number) => ({
@@ -966,14 +959,14 @@ export class CustomGamePage extends Page {
 
     const createAvatar = (avatarUrl: string | undefined, color: string) => {
       return avatarUrl ?
-        new Div()
-          .class("w-10 h-10 rounded-full")
-          .withStyle(
-            `background-image: url('${avatarUrl}'); background-size: cover; background-position: center; outline: 2px solid ${color};`,
-          )
+          new Div()
+            .class("w-10 h-10 rounded-full")
+            .withStyle(
+              `background-image: url('${avatarUrl}'); background-size: cover; background-position: center; outline: 2px solid ${color};`,
+            )
         : new Div()
-          .class("w-10 h-10 rounded-full")
-          .withStyle(`background: ${color}; outline: 2px solid ${color};`);
+            .class("w-10 h-10 rounded-full")
+            .withStyle(`background: ${color}; outline: 2px solid ${color};`);
     };
 
     const leaderboard = this.IngamePlayers.map((playerData) => {
@@ -1030,8 +1023,7 @@ export class CustomGamePage extends Page {
       const playerColor = PLAYER_COLOURS[player.pid];
       const playerColorClass = PLAYER_COLOUR_CLASSES[player.pid];
 
-      const username = player.isMe ? APP.userInfo!.username
-        : player.username;
+      const username = player.isMe ? APP.userInfo!.username : player.username;
 
       const card = new Div(
         new Div(
@@ -1039,7 +1031,9 @@ export class CustomGamePage extends Page {
           new Div(new Image("/api/v1/user/avatars/" + username + ".webp"))
             .class(AVATAR_DIV)
             .class("h-14")
-            .class(`outline-2 outline-${playerColorClass} bg-${playerColorClass}`),
+            .class(
+              `outline-2 outline-${playerColorClass} bg-${playerColorClass}`,
+            ),
           new Paragraph(player.username).class("text-xl font-bold text-white"),
         ).class("flex items-center gap-4"),
         new Paragraph(String(player.score))

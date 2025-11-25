@@ -1,30 +1,28 @@
-// TODO: Online tournaments -> Handling in conjunciton with the game service, abandoned tournaments etc or abandoned games within tournamnets.
-// if someone doesn't join a game by token expiry, they lose the game. 
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 import { randomUUID } from 'crypto';
 import { GameServiceClient } from '../clients/game-service.client.js';
-import { EventManager} from './EventManager.js';
+import { EventManager } from './EventManager.js';
 import { GameRegistry } from './GameRegistry.js';
 import { BadRequestError, NotFoundError, ForbiddenError, ConflictError } from '../utils/errors.js';
 import {
-	GameKey,
-	TournamentId,
-	TournamentGame,
-	UserId,
-	GameId,
-	GameResultWebhook,
-	GameResultDB,
-	GameParticipationDB,
-	TournamentResultDB,
-	TournamentParticipationDB,
-	TournamentInviteEvent,
-	NewTournamentResponse,
-	InviteToTournamentResponse,
-	JoinTournamentResponse,
-	TournamentStatusAPI,
-	Tournament,
-	Player,
-	TournamentGameStage
+  GameKey,
+  TournamentId,
+  TournamentGame,
+  UserId,
+  GameId,
+  GameResultWebhook,
+  GameResultDB,
+  GameParticipationDB,
+  TournamentResultDB,
+  TournamentParticipationDB,
+  TournamentInviteEvent,
+  NewTournamentResponse,
+  InviteToTournamentResponse,
+  JoinTournamentResponse,
+  TournamentStatusAPI,
+  Tournament,
+  Player,
+  TournamentGameStage
 } from '../types.js';
 import { TournamentInviteResponseEvent } from './EventManager.js';
 
@@ -83,10 +81,10 @@ export class TournamentManager {
 
     // Input validation
     if (playersToInvite?.includes(hostId)) {
-	    throw new BadRequestError('Cannot invite yourself');
+      throw new BadRequestError('Cannot invite yourself');
     }
     if (playersToInvite && new Set(playersToInvite).size !== playersToInvite.length) {
-	    throw new BadRequestError('Duplicate invites');
+      throw new BadRequestError('Duplicate invites');
     }
 
     // Create tournament object
@@ -103,7 +101,7 @@ export class TournamentManager {
 
     this.tournaments.set(tournamentId, tournament);
     this.log.debug({ tournamentId, hostId }, 'Tournament created in memory');
-    
+
     // Send invites via SSE
     let delivered: UserId[] = [];
     if (playersToInvite && playersToInvite.length > 0) {
@@ -203,13 +201,13 @@ export class TournamentManager {
     const tournament = this.getTournament(tournamentId);
 
     if (!tournament.invitedPlayers.includes(playerId) && tournament.hostId !== playerId)
-	throw new ForbiddenError('Not invited');
+      throw new ForbiddenError('Not invited');
 
     if (tournament.registeredPlayers.includes(playerId))
-    	throw new ConflictError('Already registered');
+      throw new ConflictError('Already registered');
 
     if (tournament.registeredPlayers.length >= CAPACITY || tournament.status !== 'waiting')
-	throw new ConflictError('Tournament full or started');
+      throw new ConflictError('Tournament full or started');
 
     tournament.registeredPlayers.push(playerId);
     this.log.debug({ tournamentId, playerId, registeredCount: tournament.registeredPlayers.length }, 'Player registered');
@@ -507,7 +505,7 @@ export class TournamentManager {
   }
 
   async saveTournament(tournamentId: TournamentId) {
-    this.log.debug({tournamentId}, 'Entered saveTournament function');
+    this.log.debug({ tournamentId }, 'Entered saveTournament function');
     const tournament = this.tournaments.get(tournamentId!);
     if (!tournament) return;
 
@@ -555,7 +553,7 @@ export class TournamentManager {
   }
 
   private cleanupTournament(tournamentId: TournamentId) {
-    this.log.debug({tournamentId}, 'Entered cleanupTournament function');
+    this.log.debug({ tournamentId }, 'Entered cleanupTournament function');
     const tournament = this.tournaments.get(tournamentId!);
     if (!tournament) return;
 
@@ -629,7 +627,7 @@ export class TournamentManager {
   }
 
   joinGame(gameId: GameId, playerId: UserId): GameKey {
-    this.log.debug({gameId}, 'Entered join game function');
+    this.log.debug({ gameId }, 'Entered join game function');
     const game = this.getTournamentGame(gameId);
 
     if (game.status === 'complete')
@@ -650,7 +648,7 @@ export class TournamentManager {
   }
 
   viewGame(gameId: GameId, viewerId: UserId): { viewingKey: string; gameId: GameId } {
-    this.log.debug({gameId, viewerId}, 'Entered view game function');
+    this.log.debug({ gameId, viewerId }, 'Entered view game function');
     const game = this.getTournamentGame(gameId);
 
     if (game.status === 'complete')

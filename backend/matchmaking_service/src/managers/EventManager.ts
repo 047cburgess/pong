@@ -1,5 +1,3 @@
-// TODO: Check how reconnections are managed -> and checking that doesn't allow connection more than once for same user. or should it allow it?
-// TODO: Potentially store the notifications if they haven't been delivered to retry?
 import type { FastifyReply } from 'fastify';
 import type { FastifyBaseLogger } from 'fastify';
 import { UserId, GameId, TournamentId, GameInviteEvent, TournamentInviteEvent } from '../types.js';
@@ -30,9 +28,9 @@ export class EventManager {
   private heartbeats: Map<UserId, NodeJS.Timeout>;
 
   constructor(log: FastifyBaseLogger) {
-	  this.log = log;
-	  this.connections = new Map<UserId, FastifyReply>();
-	  this.heartbeats = new Map<UserId, NodeJS.Timeout>();
+    this.log = log;
+    this.connections = new Map<UserId, FastifyReply>();
+    this.heartbeats = new Map<UserId, NodeJS.Timeout>();
   }
 
   /**
@@ -77,13 +75,13 @@ export class EventManager {
    * @returns true if delivered, false if user is offline
    */
   sendEvent(toUserId: UserId, event: SSEEvent): boolean {
-	const message = `data: ${JSON.stringify(event)}\n\n`;
-	this.log.debug(`SENDEVENT Function: Attempting to send SSE to ${toUserId}: ${message}`);
+    const message = `data: ${JSON.stringify(event)}\n\n`;
+    this.log.debug(`SENDEVENT Function: Attempting to send SSE to ${toUserId}: ${message}`);
 
     const connection = this.connections.get(toUserId);
 
     if (!connection) {
-	this.log.debug(`SENDEVENT Function: User ${toUserId} is not online, cannot send SSE`);
+      this.log.debug(`SENDEVENT Function: User ${toUserId} is not online, cannot send SSE`);
       return false; // User offline
     }
 

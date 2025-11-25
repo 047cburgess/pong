@@ -46,7 +46,6 @@ export default class GithubCallback extends Page {
     try {
       resp = await API.fetch("/user");
     } catch (e: any) {
-      // TODO
       return;
     }
     let body;
@@ -55,9 +54,7 @@ export default class GithubCallback extends Page {
         | void
         | ApiPaths["/user"]["get"]["responses"]["200"]["content"]["application/json"];
     }
-    if (body) {
-      APP.onLogin(body);
-      this.router.navigate("");
-    }
+    if (body) APP.onLogin(body);
+    this.router.navigate("");
   }
 }

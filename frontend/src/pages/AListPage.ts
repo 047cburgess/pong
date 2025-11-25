@@ -23,6 +23,7 @@ export const titleForUser =
       title.class("select-none");
     }
 
+    // TODO: Check if it crashes the server when the title text is too large
     title
       .class("text-4xl font-bold text-left mr-auto mb-6")
       .withId(page.listType + "-title");

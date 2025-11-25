@@ -62,10 +62,7 @@ export default class DashboardPage extends Page {
       this.userInfoTile().class(TILE_STYLES),
       this.friendsTile().class(TILE_STYLES),
     ];
-    const sideRight = [
-      this.matchHistoryTile().class(TILE_STYLES),
-      // TODO(Vaiva): Last tournament
-    ];
+    const sideRight = [this.matchHistoryTile().class(TILE_STYLES)];
 
     delete this.tiles;
     this.tiles = sideLeft.concat(sideRight) as Div[];
@@ -296,8 +293,6 @@ export default class DashboardPage extends Page {
   }
 
   interactButtonsDiv(): Div {
-    // TODO(Vaiva): Dashboard page buttons
-
     const styles = "flex gap-2 font-bold p-1 pl-4 pr-4 -mt-1 mb-3";
 
     let buttons: AElement[] = [];
@@ -352,10 +347,7 @@ export default class DashboardPage extends Page {
         break;
       case "self":
         buttons = [
-          new Div(
-            // todo: setting button icon
-            new Paragraph("Edit profile").class("self-center"),
-          )
+          new Div(new Paragraph("Edit profile").class("self-center"))
             .class("grow")
             .class(HOW_TO_CENTER_A_DIV)
             .class(styles)

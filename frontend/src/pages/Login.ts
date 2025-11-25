@@ -170,7 +170,7 @@ export default class LoginPage extends Page {
       this.router.navigate("");
     }
 
-    const resp = await API.fetch("/user"); // TODO try catch
+    const resp = await API.fetch("/user");
     let body;
     if (resp.ok || resp.status === 304) {
       body = (await resp.json().catch(console.error)) as
