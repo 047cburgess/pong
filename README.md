@@ -8,7 +8,7 @@ A full-stack multiplayer Pong platform featuring real-time gameplay, 3D graphics
 
 ## Features
 
-- **Gameplay**: 2-4 player Pong (local & online), server-authoritative logic, 3D graphics
+- **Gameplay**: 2-4 player Pong (local & online), local tournaments, 3D graphics
 - **Authentication**: Email/password, OAuth2 (GitHub), Two-Factor Authentication
 - **Social**: User profiles, friend system, match history, player statistics
 - **Matchmaking**: Automated queue, tournament brackets, game history
