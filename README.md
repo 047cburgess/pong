@@ -145,7 +145,7 @@ This project adheres to strict requirements:
 ## Future Improvements
 - Mobile applications
 - Observability stack (Grafana/Prometheus)
-- Complete tournament frontend
+- Complete online tournament frontend
 - Enhanced accessibility & GDPR compliance
 - Internationalization
 - Additional OAuth providers
