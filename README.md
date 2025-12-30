@@ -51,7 +51,7 @@ A full-stack multiplayer Pong platform featuring real-time gameplay, 3D graphics
 
 ```bash
 git clone https://github.com/047cburgess/pong.git
-cd ft_transcendence
+cd pong
 cp .env.example .env
 ```
 
@@ -109,6 +109,25 @@ Each service maintains its own SQLite database:
 
 ---
 
+## Modules 
+
+We chose the following modules to complete this project:
+
+- **Web**: Use a framework to build the backend
+- **Web**: Use tailwind CSS to build the frontend
+- **Web**: Use a database for the backend
+- **User Management**: Standard user management & authentication
+- **User Management**: Implement a remote authentication
+- **Gameplay and UX**: Multiplayer
+- **Gameplay and UX**: Remote players
+- **Cybersecurity**: Implement 2FA and JWT
+- **Devops**: Design the backend as microservices
+- **Graphics**: Use advanced 2d techniques
+- **Accessibility**: Expanding browser compatibility
+- **Server-Side Pong**: Replace basic Pong with server-side Pong and implement API
+
+---
+
 ## 42 Curriculum Constraints
 
 This project adheres to strict requirements:
@@ -132,3 +151,4 @@ This project adheres to strict requirements:
 - Additional OAuth providers
 - Vault for secrets management
 - Rate limiting
+- Redis caching
