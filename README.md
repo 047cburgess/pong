@@ -123,17 +123,12 @@ This project adheres to strict requirements:
 
 ---
 
-## Known Limitations & Roadmap
-
-### Current Limitations
-- Desktop-optimized (mobile not implemented)
-- Online tournament UI incomplete (backend ready)
-- No production monitoring tools
-
-### Future Improvements
+## Future Improvements
 - Mobile applications
 - Observability stack (Grafana/Prometheus)
 - Complete tournament frontend
 - Enhanced accessibility & GDPR compliance
 - Internationalization
 - Additional OAuth providers
+- Vault for secrets management
+- Rate limiting
